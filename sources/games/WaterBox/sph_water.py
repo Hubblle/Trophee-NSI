@@ -96,11 +96,6 @@ class SPHSimulation:
         self._initialize_particles(particle_count)
         
         
-        #Constants
-        self.GRADIENT_FACTOR = -30 / (math.pi * self.smoothing_radius**5)
-        
-        self.KERNEL_FACTOR = 4 / (math.pi * self.smoothing_radius**8)
-
 
     
     def _initialize_particles(self, count:int)-> None:
@@ -183,6 +178,10 @@ class SPHSimulation:
                     distance = diff.length()
                     
                     particle.density += other.mass * self._kernel(distance, h)
+                    
+            particle.density = max(particle.density, 0)
+                    
+        
 
             
 
@@ -198,7 +197,7 @@ class SPHSimulation:
         h = self.smoothing_radius
 
         
-        
+
         for particle in self.particles:
             particle.reset_acceleration() # Acceleration à 0
             pressure_force = pygame.Vector2(0, 0)
@@ -212,12 +211,9 @@ class SPHSimulation:
 
                     diff = particle.position - other.position
                     distance = diff.length()
-                    
-                    if distance <= 0.001:
-                        pressure_force += pygame.Vector2(randint(-1,1),randint(-1,1))
 
                     
-                    # Pressure force
+                    #- Force de pression -#
                     r = distance
 
                     if r > 0:
@@ -233,7 +229,8 @@ class SPHSimulation:
 
                     pressure_force += pressure_component * direction
 
-                    # Viscosity force
+
+                    #- Force de viscosité -#
                     velocity_diff = other.velocity - particle.velocity
                     viscosity_component = (
                         self.viscosity * other.mass / other.density *
@@ -266,7 +263,7 @@ class SPHSimulation:
 
     def _boundary_handling(self,mouse):
         """Prend en charge les collision des particules entre les bords de la simulation"""
-        damping = 0.05
+        damping = -1
         border = 20.0 #Offset de la bordure
 
         for particle in self.particles:
@@ -293,9 +290,13 @@ class SPHSimulation:
                 
 
    
-    def step(self, dt,mouse:tuple)-> None:
+    def step(self, dt,mouse:tuple, stiffness, viscosity)-> None:
         """Execute un step de la simulation"""
         
+        
+        #Met à jour les param de la simulation selon les inputs
+        self.gas_stiffness = stiffness
+        self.viscosity = viscosity
         
         self.spatial_lookup.clear()
         self._update_spatial_lookup()
@@ -317,6 +318,7 @@ class SPHSimulation:
                     diff = other.position - mouse_pos
                     dst = diff.length()
                     
+                    #Verifier la distance au curseur et appliquer la répulsion
                     if dst <= self.cursor_radius:
                         if dst <= self.cursor_radius**2:
                             
@@ -341,9 +343,9 @@ class SPHSimulation:
     def draw(self, surface, camera_x, camera_y):
         """Dessine toutes les particules"""
         
-        #Dessine le fond de la simulation:
+        """#Dessine le fond de la simulation:
         rect = pygame.Rect(0-camera_x, 0-camera_y, self.width, self.height)
-        pygame.draw.rect(surface, (255,255,255), rect)
+        pygame.draw.rect(surface, (255,255,255), rect)"""
         
         
         for particle in self.particles:
