@@ -94,7 +94,7 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
     world_y = mouse["y"] + cam_y
     
     # Si le clic gauche de la souris est pressé, on compare sa position à la précédente pour faire déplacer la caméra
-    if mouse["click"][0] > 0:
+    if mouse["click"][0] > 0 and not (viscosity.clicked or stiffness.clicked):
         cam_x += mouse_pos["x"] - mouse["x"]
         #cam_y += mouse_pos["y"] - mouse["y"]
         world_x = mouse["x"] + cam_x
