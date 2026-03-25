@@ -22,7 +22,6 @@ surface = pygame.Surface(WINDOW_SIZE)  # La surface utilisée dans la fonction d
 # Préciser le type de la variable est facultatif mais permet à l'éditeur de code de proposer l'auto-complétion
 # Les variables initialisées à None sont des variables globales qui seront initialisées dans la fonction load
 
-assets: dict = None
 earth: Earth = None  # La planète Terre, initialisée dans la fonction load
 celestial_bodies: list[GraphicalCelestialBody] = []
 worm_hole: GraphicalCelestialBody = None
@@ -226,7 +225,7 @@ def load() -> None:
             celestial_bodies.remove(edit_target)
         edit_target = None
     
-    global background, zoom_input, time_input, earth, worm_hole, level_end, assets, levels, fonts, restart_button, previous_button, \
+    global background, zoom_input, time_input, earth, worm_hole, level_end, levels, fonts, restart_button, previous_button, \
         next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input, remove_button
     
     assets = {}
@@ -236,7 +235,7 @@ def load() -> None:
     # On charge les soleils
     suns = []
     stars_images["suns"] = suns
-    suns.append(assets["images"]["sun1[SPRITESHEET;500;10].png"])
+    suns.append(assets["images"]["sun1[SPRITESHEET;335;10].png"])
     suns.append(assets["images"]["sun2[SPRITESHEET;465;10].png"])
     suns.append(assets["images"]["sun3[SPRITESHEET;156;10].png"])
 
@@ -250,7 +249,8 @@ def load() -> None:
     worm_hole = GraphicalCelestialBody(0, 0, 1e33, 2e7, stars_images["worm_hole"], surface, screenPosition, True)
     
     # On créé la Terre
-    earth = Earth(0, 0, assets["images"]["earth.png"], surface, screenPosition, worm_hole)
+    explosion = assets["images"]["explosion[SPRITESHEET;151;24].png"]
+    earth = Earth(0, 0, assets["images"]["earth.png"], surface, screenPosition, worm_hole, explosion)
 
     # On charge le fond
     background = assets["images"]["space.png"]
@@ -418,7 +418,12 @@ def tick(keys: dict, mouse: dict) -> None:
             cam_x += mouse_pos["x"] - mouse["x"]
             cam_y += mouse_pos["y"] - mouse["y"]
     
-    earth.move(1/40, time_scale)
+    if earth.exploding:
+        if not lost.displayed and earth.explosion_end:
+            lost.displayed = True
+    else:
+        earth.move(1/40, time_scale)
+        earth.collide()
     if earth.fallen:  # Tombée dans un trou noir
         if earth.success:
             if editing:

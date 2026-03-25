@@ -331,7 +331,7 @@ class GraphicalCelestialBody(CelestialBody):
 
 class Earth(GraphicalCelestialBody):
 
-    def __init__(self, x: int, y: int, image: Surface | SpriteSheet, surface: Surface, getPosition: Callable[[int, int], tuple[int, int]], goal: CelestialBody):
+    def __init__(self, x: int, y: int, image: Surface | SpriteSheet, surface: Surface, getPosition: Callable[[int, int], tuple[int, int]], goal: CelestialBody, explosion: SpriteSheet):
         """
         Réprésente la Terre et hérite de la classe GraphicalCelestialBody. La spécificité de la Terre 
         est qu'elle sert de balle de golf et donc qu'elle doit posséder des méthodes personnalisées.
@@ -348,6 +348,8 @@ class Earth(GraphicalCelestialBody):
         :type getPosition: Callable[[int, int], tuple[int, int]]
         :param goal: L'astre (un trou noir / trou de ver) à atteindre pour valider le niveau
         :type goal: CelestialBody | GraphicalCelestialBody
+        :param explosion: L'animation d'explosion à utiliser
+        :type explosion: utils.SpriteSheet
         """
         super().__init__(x, y, 972e24, 6.4e6, image, surface, getPosition)
         self.in_black_hole = None  # Indique le trou noir dans lequel la Terre est actuellement, None si elle n'est dans aucun trou noir
@@ -357,6 +359,10 @@ class Earth(GraphicalCelestialBody):
         self.original_x = x
         self.original_y = y
         self.goal = goal
+        self.explosion = explosion
+        self.exploding = False
+        self.last_explosion_frame = 0
+        self.explosion_end = False
     
     def calculateForce(self, body: CelestialBody) -> Vector:
         vector = self.getVector(body)
@@ -383,9 +389,21 @@ class Earth(GraphicalCelestialBody):
 
     def display(self, scale: int) -> None:
         # On ajuste scale pour réduire la taille de la Terre si elle se fait aspirer par un trou noir
-        if self.narrowing:
-            scale += round(scale * self.narrowing)
-        return super().display(scale)
+        if self.exploding:
+            if self.explosion_end:
+                return
+            sx, sy = self.getPosition(self.x, self.y)
+            image = self.explosion.getCurrentSprite()
+            if self.explosion.frame < self.last_explosion_frame:
+                self.explosion_end = True
+                return
+            self.last_explosion_frame = self.explosion.frame
+            image = transform.scale_by(image, self.radius * 6 / scale / image.width)
+            self.surface.blit(image, (sx - image.width//2, sy - image.height//2))
+        else:
+            if self.narrowing:
+                scale += round(scale * self.narrowing)
+            return super().display(scale)
     
     def reset(self) -> None:
         """
@@ -397,4 +415,23 @@ class Earth(GraphicalCelestialBody):
         self.in_black_hole = None
         self.fallen = False
         self.locked = True
+        self.explosion.frame = 0
+        self.exploding = False
+        self.explosion_end = False
+        self.last_explosion_frame = 0
         self.stop()
+    
+    def collide(self) -> bool:
+        """
+        Vérifie les collisions avec les autres astres.
+
+        :return: True si la Terre a percuté un astre solide, sinon False
+        :rtype: bool
+        """
+        for body in self.other_bodies:
+            if body.is_black_hole:
+                continue
+            if (self.x - body.x)**2 + (self.y - body.y)**2 < (self.radius + body.radius)**2:
+                self.exploding = True
+                return True
+        return False
