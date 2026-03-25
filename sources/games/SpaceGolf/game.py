@@ -46,6 +46,7 @@ editing = False
 mode_button: RangeInput = None
 edit_target: GraphicalCelestialBody = None
 add_button: Button = None
+remove_button: Button = None
 mass_input: RangeInput = None
 radius_input: RangeInput = None
 type_input: RangeInput = None
@@ -219,8 +220,14 @@ def load() -> None:
         earth.addInteraction(body)
         setTargetTo(body)
     
+    def onClickRemove() -> None:
+        global edit_target
+        if edit_target in celestial_bodies:
+            celestial_bodies.remove(edit_target)
+        edit_target = None
+    
     global background, zoom_input, time_input, earth, worm_hole, level_end, assets, levels, fonts, restart_button, previous_button, \
-        next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input
+        next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input, remove_button
     
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
@@ -271,6 +278,7 @@ def load() -> None:
     previous_button = Button(WINDOW_WIDTH//2 - 60, 30, assets["images"]["previous_button.png"], onClickPrevious, surface)
     next_button = Button(WINDOW_WIDTH//2 + 60, 30, assets["images"]["next_button.png"], onClickNext, surface)
     add_button = Button(WINDOW_WIDTH-340, 36, assets["images"]["add.png"], onClickAdd, surface)
+    remove_button = Button(WINDOW_WIDTH-400, 36, assets["images"]["remove.png"], onClickRemove, surface)
 
 
 def init() -> None:
@@ -366,6 +374,9 @@ def tick(keys: dict, mouse: dict) -> None:
             mouse_click = 0
         if add_button.tick(*param):
             mouse_click = 0
+        if edit_target and edit_target is not worm_hole:
+            if remove_button.tick(*param):
+                mouse_click = 0
 
     if trials > 0 or editing:
         if launching:
@@ -468,6 +479,8 @@ def display() -> pygame.Surface:
     if editing:
         add_button.display()
         trials_input.display()
+        if edit_target and edit_target is not worm_hole:
+            remove_button.display()
 
     # On affiche le nombre d'essais restants
     font = fonts.getFont(26)
