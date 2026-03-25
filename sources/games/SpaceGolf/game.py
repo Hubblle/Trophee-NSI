@@ -4,6 +4,8 @@ import pygame
 from os import path
 from .physics import Vector, GraphicalCelestialBody, Earth
 from utils import loadAssetsFolder, RangeInput, PopUp, SpriteSheet, Button, LoadedFont
+from json import dump
+from math import log10
 
 WINDOW_WIDTH, WINDOW_HEIGHT = WINDOW_SIZE = (1600, 900)
 FOLDER_PATH = path.dirname(__file__)  # Chemin absolu du dossier contenant ce script
@@ -22,16 +24,16 @@ surface = pygame.Surface(WINDOW_SIZE)  # La surface utilisée dans la fonction d
 
 assets: dict = None
 earth: Earth = None  # La planète Terre, initialisée dans la fonction load
-suns: list[GraphicalCelestialBody] = []
-black_holes: list[GraphicalCelestialBody] = []
+celestial_bodies: list[GraphicalCelestialBody] = []
 worm_hole: GraphicalCelestialBody = None
 launching = False
 launch_speed = Vector()
 zoom_input: RangeInput = None
 time_input: RangeInput = None
 level_end: PopUp = None
+lost: PopUp = None
 background: pygame.Surface = None
-celestial_bodies: dict[str, pygame.Surface | SpriteSheet] = {}
+stars_images: dict[str, pygame.Surface | SpriteSheet] = {}
 levels: list[dict] = None
 level = 0
 max_trials = None
@@ -40,6 +42,15 @@ fonts: LoadedFont = None
 restart_button: Button = None
 previous_button: Button = None
 next_button: Button = None
+editing = False
+mode_button: RangeInput = None
+edit_target: GraphicalCelestialBody = None
+add_button: Button = None
+mass_input: RangeInput = None
+radius_input: RangeInput = None
+type_input: RangeInput = None
+trials_input: RangeInput = None
+edited = False
 
 # On définit les fonctions secondaires
 
@@ -85,6 +96,7 @@ def loadLevel(index: int) -> None:
     level = levels[index]
     max_trials = trials = level["trials"]
     launching = False
+    mode_button.value = 0
 
     earth.reset()
     earth.other_bodies.clear()
@@ -94,18 +106,53 @@ def loadLevel(index: int) -> None:
     worm_hole.x = wx
     worm_hole.y = wy
     
-    suns.clear()
+    celestial_bodies.clear()
     for x, y, mass, radius, costume in level["suns"]:
-        sun = GraphicalCelestialBody(x, y, mass, radius, celestial_bodies["suns"][costume], surface, screenPosition)
+        sun = GraphicalCelestialBody(x, y, mass, radius, stars_images["suns"][costume], surface, screenPosition)
         earth.addInteraction(sun)
-        suns.append(sun)
+        celestial_bodies.append(sun)
     
-    black_holes.clear()
-    for x, y, mass, radius, costume in level["black_holes"]:
-        black_hole = GraphicalCelestialBody(x, y, mass, radius, celestial_bodies["black_holes"][costume], surface, screenPosition, True)
+    for x, y, mass, radius in level["black_holes"]:
+        black_hole = GraphicalCelestialBody(x, y, mass, radius, stars_images["black_hole"], surface, screenPosition, True)
         earth.addInteraction(black_hole)
-        black_holes.append(black_hole)
-    
+        celestial_bodies.append(black_hole)
+
+
+def saveLevelInMemory() -> None:
+    """
+    Sauvegarde le niveau actuel dans la liste 'levels'.
+    """
+    data = levels[level]
+    data["worm_hole"] = [worm_hole.x, worm_hole.y]
+    data["trials"] = max_trials
+    data["suns"] = [[s.x, s.y, s.mass, s.radius, stars_images["suns"].index(s.original_image)] for s in celestial_bodies if not s.is_black_hole]
+    data["black_holes"] = [[h.x, h.y, h.mass, h.radius] for h in celestial_bodies if h.is_black_hole]
+
+
+def saveLevelsToDisk() -> None:
+    """
+    Sauvegarde les niveaux sur le disque.
+    """
+    json_path = path.join(FOLDER_PATH, "assets", "json", "levels.json")
+    if not path.exists(json_path):
+        open(json_path, "x")
+    with open(json_path, "w") as f:
+        dump(levels, f, indent=2)
+
+
+def setTargetTo(body: GraphicalCelestialBody) -> None:
+    """
+    Affectue body à edit_target et change les paramètres pour les faire correspondre.
+
+    :param body: L'astre à sélectionner
+    :type body: GraphicalCelestialBody
+    """
+    global edit_target
+    edit_target = body
+    mass_input.value = log10(body.mass) - (8 if body.is_black_hole else 0)
+    radius_input.value = log10(body.radius)
+    type_input.value = 3 if body.is_black_hole else stars_images["suns"].index(body.original_image)
+
 
 # On définit les 5 fonctions principales
 
@@ -139,13 +186,21 @@ def load() -> None:
         event_list.append({"type": "quit"})
     
     def onClickNext() -> None:
-        global level
+        global level, edited
+        if edited:
+            saveLevelInMemory()
+            saveLevelsToDisk()
+            edited = False
         level = min(level + 1, len(levels) - 1)
         level_end.displayed = False
         loadLevel(level)
 
     def onClickPrevious() -> None:
-        global level
+        global level, edited
+        if edited:
+            saveLevelInMemory()
+            saveLevelsToDisk()
+            edited = False
         level = max(level - 1, 0)
         level_end.displayed = False
         loadLevel(level)
@@ -155,8 +210,17 @@ def load() -> None:
         cam_x = cam_y = 0
         trials = max_trials
         earth.reset()
+        lost.displayed = False
     
-    global background, zoom_input, time_input, earth, worm_hole, level_end, assets, levels, fonts, restart_button, previous_button, next_button
+    def onClickAdd() -> None:
+        global edit_target
+        body = GraphicalCelestialBody(cam_x*scale, cam_y*scale, 1e25, 7e7, stars_images["suns"][0], surface, screenPosition)
+        celestial_bodies.append(body)
+        earth.addInteraction(body)
+        setTargetTo(body)
+    
+    global background, zoom_input, time_input, earth, worm_hole, level_end, assets, levels, fonts, restart_button, previous_button, \
+        next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input
     
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
@@ -164,20 +228,19 @@ def load() -> None:
 
     # On charge les soleils
     suns = []
-    celestial_bodies["suns"] = suns
+    stars_images["suns"] = suns
     suns.append(assets["images"]["sun1[SPRITESHEET;500;10].png"])
     suns.append(assets["images"]["sun2[SPRITESHEET;465;10].png"])
-    suns.append(assets["images"]["sun3[SPRITESHEET;333;10].png"])
-    suns.append(assets["images"]["sun4[SPRITESHEET;156;10].png"])
+    suns.append(assets["images"]["sun3[SPRITESHEET;156;10].png"])
 
     # On charge le trou de ver
-    celestial_bodies["worm_hole"] = assets["images"]["worm_hole[SPRITESHEET;400;20].png"]
+    stars_images["worm_hole"] = assets["images"]["worm_hole[SPRITESHEET;400;20].png"]
 
     # On charge le trou noir
-    celestial_bodies["black_holes"] = [assets["images"]["black_hole[SPRITESHEET;498;30].png"]]
+    stars_images["black_hole"] = assets["images"]["black_hole[SPRITESHEET;508;20].png"]
 
     # On créé le trou de ver
-    worm_hole = GraphicalCelestialBody(0, 0, 1e33, 2e7, celestial_bodies["worm_hole"], surface, screenPosition, True)
+    worm_hole = GraphicalCelestialBody(0, 0, 1e33, 2e7, stars_images["worm_hole"], surface, screenPosition, True)
     
     # On créé la Terre
     earth = Earth(0, 0, assets["images"]["earth.png"], surface, screenPosition, worm_hole)
@@ -189,25 +252,37 @@ def load() -> None:
                       Button(230, 120, assets["images"]["home.png"], onClickHome),
                       Button(-212, 120, assets["images"]["next.png"], onClickNext))
 
-    # Une fois les assets chargées on peut créer le RangeInput
+    lost = PopUp(surface, WINDOW_WIDTH//2, WINDOW_HEIGHT//2, assets["images"]["lose.png"],
+                      Button(230, 125, assets["images"]["home.png"], onClickHome),
+                      Button(-200, 125, assets["images"]["retry.png"], onClickRestart))
+
+    # Une fois les assets chargées on peut créer les RangeInput
     fonts = assets["fonts"]["inter.ttf"]
-    font = fonts.getFont(24)
-    zoom_input = RangeInput(36, WINDOW_HEIGHT-36, 160, (50000, 500000, 10000), surface, convertDistance, font, 12, 100000)
-    time_input = RangeInput(230, WINDOW_HEIGHT-36, 160, (600, 14400, 600), surface, convertTime, font, 12, 5400)
+    zoom_input = RangeInput(36, WINDOW_HEIGHT-36, 160, (50000, 500000, 10000), surface, convertDistance, fonts.getFont(24), 12, 100000)
+    time_input = RangeInput(230, WINDOW_HEIGHT-36, 160, (600, 14400, 600), surface, convertTime, fonts.getFont(24), 12, 5400)
+    mode_button = RangeInput(WINDOW_WIDTH-120, 36, 60, (0, 1), surface, lambda value: f"Mode : {"édition" if value else "jeu"}", fonts.getFont(18), 9, 0)
+    mass_input = RangeInput(WINDOW_WIDTH-150, 100, 100, (24, 28, 0.1), surface, lambda value: f"Masse : {10**(value if type_input.value < 3 else value+8):.2g} kg", fonts.getFont(20), 10, 25)
+    radius_input = RangeInput(WINDOW_WIDTH-150, 170, 100, (7.3, 8.3, 0.1), surface, lambda value: f"Rayon : {10**value:.2g} m", fonts.getFont(20), 10, 7.7)
+    type_input = RangeInput(WINDOW_WIDTH-150, 240, 100, (0, 3), surface, lambda i: f"Type : {f"étoile#{i+1}" if i < 3 else "trou noir"}", fonts.getFont(20), 10, 0)
+    trials_input = RangeInput(WINDOW_WIDTH-280, 36, 100, (1, 20), surface, lambda value: f"Essais max : {value}", fonts.getFont(18), 9, 1)
 
     # On créé les boutons cliquables
-    restart_button = Button(WINDOW_WIDTH//2, 30, assets["images"]["restart.png"], onClickRestart)
-    previous_button = Button(WINDOW_WIDTH//2 - 60, 30, assets["images"]["previous_button.png"], onClickPrevious)
-    next_button = Button(WINDOW_WIDTH//2 + 60, 30, assets["images"]["next_button.png"], onClickNext)
+    restart_button = Button(WINDOW_WIDTH//2, 30, assets["images"]["restart.png"], onClickRestart, surface)
+    previous_button = Button(WINDOW_WIDTH//2 - 60, 30, assets["images"]["previous_button.png"], onClickPrevious, surface)
+    next_button = Button(WINDOW_WIDTH//2 + 60, 30, assets["images"]["next_button.png"], onClickNext, surface)
+    add_button = Button(WINDOW_WIDTH-340, 36, assets["images"]["add.png"], onClickAdd, surface)
 
 
 def init() -> None:
     """
     Initialise/réinitialise le mini-jeu
     """
-    global level
+    global level, edited
     level = 0
     loadLevel(0)
+    edited = False
+    level_end.displayed = False
+    lost.displayed = False
     event_list.clear()
     level_end.displayed = False
     zoom_input.value = 100000
@@ -223,30 +298,76 @@ def tick(keys: dict, mouse: dict) -> None:
     :param mouse: Dictionnaire contenant les informations liées à la souris `{'x': int, 'y'; int, 'click': list[int, int, int]}`
     :type mouse: dict
     """
-    global mouse_pos, cam_x, cam_y, launching, scale, time_scale, trials
+    global mouse_pos, cam_x, cam_y, launching, scale, time_scale, trials, editing, edited, max_trials, edit_target
 
     mouse_click = mouse["click"][0]  # On utilise une variable temporaire pour pouvoir stopper la propagation d'un clic si celui-ci est intercepté par un bouton
 
     # Simulation des pop-up
     if level_end.displayed:
-        if level_end.tick(mouse["x"], mouse["y"], mouse_click):
-            mouse_click = 0
+        level_end.tick(mouse["x"], mouse["y"], mouse_click)
+        mouse_click = 0
+    if lost.displayed:
+        lost.tick(mouse["x"], mouse["y"], mouse_click)
+        mouse_click = 0
     
     # Simulation des boutons
-    zoom_input.tick((mouse["x"], mouse["y"]), mouse_click)
+    param = (mouse["x"], mouse["y"]), mouse_click
+    zoom_input.tick(*param)
     setScale(zoom_input.value)
-    time_input.tick((mouse["x"], mouse["y"]), mouse_click)
+    time_input.tick(*param)
     time_scale = time_input.value
-    if zoom_input.clicked or time_input.clicked:
+    mode_button.tick(*param)
+    editing = bool(mode_button.value)
+    if not editing:
+        edit_target = None
+    if mode_button.changed and editing:
+        edited = True
+    if zoom_input.clicked or time_input.clicked or mode_button.clicked:
         mouse_click = 0
+    
+    # On affiche les entrées numériques servant à configurer un astre en mode edit
+    if edit_target and edit_target is not worm_hole:
+        mass_input.tick(*param)
+        mass = round(10**(mass_input.value + (8 if type_input.value == 3 else 0)))
+        if mass != edit_target.mass:
+            edit_target.mass = mass
+        
+        radius_input.tick(*param)
+        radius = round(10**radius_input.value)
+        if radius != edit_target.radius:
+            edit_target.radius = radius
+            edit_target.images.clear()
+        
+        type_input.tick(*param)
+        if type_input.changed:
+            if type_input.value == 3:
+                edit_target.original_image = stars_images["black_hole"]
+                edit_target.is_black_hole = True
+                edit_target.images.clear()
+            else:
+                edit_target.original_image = stars_images["suns"][type_input.value]
+                edit_target.is_black_hole = False
+                edit_target.images.clear()
+        
+        if mass_input.clicked or radius_input.clicked or type_input.clicked:
+            mouse_click = 0
     
     param = (mouse["x"], mouse["y"], mouse_click)
     if any((restart_button.tick(*param),
            previous_button.tick(*param),
            next_button.tick(*param))):
         mouse_click = 0
+    
+    if editing:
+        trials_input.tick((mouse["x"], mouse["y"]), mouse_click)
+        if trials_input.changed:
+            max_trials = trials_input.value
+        if trials_input.clicked:
+            mouse_click = 0
+        if add_button.tick(*param):
+            mouse_click = 0
 
-    if trials > 0:
+    if trials > 0 or editing:
         if launching:
             earth_x, earth_y = screenPosition(earth.x, earth.y)
             launch_speed.coordinates = earth_x - mouse["x"], earth_y - mouse["y"]
@@ -256,7 +377,8 @@ def tick(keys: dict, mouse: dict) -> None:
                 # On convertit la distance du lancement en une vitesse de lancement en m/s avec l'échelle suivante : 7500 m = 1 m/s
                 earth.speed.magnitude = launch_speed.magnitude * scale / 7500
                 earth.locked = False
-                trials -= 1
+                if not editing:
+                    trials -= 1
         else:
             # La souris vient dêtre cliquée
             if mouse_click == 1:
@@ -267,18 +389,33 @@ def tick(keys: dict, mouse: dict) -> None:
                     launching = True
                     earth.locked = True
                     mouse_click = 0
+    
+    # On sélectionne/désélectionne un astre en mode edit
+    if mouse_click == 1 and editing:
+        edit_target = None
+        for body in (*celestial_bodies, worm_hole):
+            if body.isTouchingMouse(mouse["x"], mouse["y"], scale):
+                setTargetTo(body)
+                break
 
     # Si le clic gauche de la souris est pressé, on compare sa position à la précédente pour faire déplacer la caméra
-    if mouse_click > 0 and not launching:
-        cam_x += mouse_pos["x"] - mouse["x"]
-        cam_y += mouse_pos["y"] - mouse["y"]
+    if mouse_click > 0:
+        if edit_target and edit_target.isTouchingMouse(mouse["x"], mouse["y"], scale):
+            edit_target.x += (mouse["x"] - mouse_pos["x"]) * scale
+            edit_target.y += (mouse["y"] - mouse_pos["y"]) * scale
+        elif not launching:
+            cam_x += mouse_pos["x"] - mouse["x"]
+            cam_y += mouse_pos["y"] - mouse["y"]
     
     earth.move(1/40, time_scale)
     if earth.fallen:  # Tombée dans un trou noir
         if earth.success:
-            level_end.displayed = True
+            if editing:
+                earth.reset()
+            else:
+                level_end.displayed = True
         else:
-            earth.reset()
+            lost.displayed = True
 
     # Mis à jour de la position de la souris
 
@@ -302,26 +439,35 @@ def display() -> pygame.Surface:
     for x in range(round(cam_x*scale*-1.5e-7)%background.width-background.width, WINDOW_WIDTH, background.width):
         for y in range(round(cam_y*scale*-1.5e-7)%background.height-background.height, WINDOW_HEIGHT, background.height):
             surface.blit(background, (x, y))
+    
+    # On ajoute la planète Terre, les soleils, le trou de ver et les trous noirs
+    for body in (*celestial_bodies, worm_hole):
+        body.display(scale)
+        if body is edit_target:
+            pygame.draw.circle(surface, (255, 255, 255), screenPosition(body.x, body.y), round(body.radius/scale)+50, 10)
 
     if launching:
         pygame.draw.line(surface, (255, 0, 0), screenPosition(earth.x, earth.y), (mouse_pos["x"], mouse_pos["y"]), 4)
     
-    # On ajoute la planète Terre, les soleils, le trou de ver et les trous noirs
-    for sun in suns:
-        sun.display(scale)
-    for black_hole in black_holes:
-        black_hole.display(scale)
-    worm_hole.display(scale)
     if not earth.fallen:
         earth.display(scale)
 
     # On affiche les boutons
     zoom_input.display()
     time_input.display()
+    mode_button.display()
 
-    restart_button.display(surface)
-    previous_button.display(surface)
-    next_button.display(surface)
+    if edit_target and edit_target is not worm_hole:
+        mass_input.display()
+        radius_input.display()
+        type_input.display()
+
+    restart_button.display()
+    previous_button.display()
+    next_button.display()
+    if editing:
+        add_button.display()
+        trials_input.display()
 
     # On affiche le nombre d'essais restants
     font = fonts.getFont(26)
@@ -331,6 +477,8 @@ def display() -> pygame.Surface:
     # On affiche les pop-up
     if level_end.displayed:
         level_end.display()
+    if lost.displayed:
+        lost.display()
     
     return surface
 
@@ -342,6 +490,9 @@ def events() -> list:
     :return: Retourne la liste des évènements s'étant produit dans le mini-jeu. Exemple `['quit']`
     :rtype: list[str]
     """
+    if edited and any(event.get("type", None) == "quit" for event in event_list):
+        saveLevelInMemory()
+        saveLevelsToDisk()
     events_copy = event_list.copy()
     event_list.clear()  # On vide la liste des évènements pour ne pas les renvoyer à nouveau au prochain appel
     return events_copy

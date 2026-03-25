@@ -311,6 +311,22 @@ class GraphicalCelestialBody(CelestialBody):
         if self.angle != 0:
             image = transform.rotate(image, self.angle)
         self.surface.blit(image, (x - image.width//2, y - image.height//2))
+    
+    def isTouchingMouse(self, mouse_x: int, mouse_y: int, scale: int) -> bool:
+        """
+        Retourne True si la souris touche l'astre sinon False.
+
+        :param mouse_x: Abscisse de la souris
+        :type mouse_x: int
+        :param mouse_y: Ordonnée de la souris
+        :type mouse_y: int
+        :param scale: Échelle du rendu (en m/px)
+        :type scale: int
+        :return: True si la souris touche l'astre sinon False
+        :rtype: bool
+        """
+        sx, sy = self.getPosition(self.x, self.y)
+        return (mouse_x - sx)**2 + (mouse_y - sy)**2 < (self.radius / scale)**2
 
 
 class Earth(GraphicalCelestialBody):
@@ -347,7 +363,7 @@ class Earth(GraphicalCelestialBody):
         # On profite du calcul des distances pour savoir si la Terre est aspirée par un trou noir
         if not self.in_black_hole and body.is_black_hole and vector.magnitude < body.radius:
             self.in_black_hole = body
-        if self.in_black_hole:
+        if self.in_black_hole == body:
             # Formule ajustée du calcul des forces gravitationnelles pour obtenir un mouvement naturel malgré la force du trou noir
             value = 6.6743e-11 * self.mass * body.mass / vector.magnitude / body.radius**2.9 * vector.magnitude
             return Vector(magnitude=value, direction=vector.direction)
@@ -361,8 +377,7 @@ class Earth(GraphicalCelestialBody):
                 self.narrowing += 3 * dt
                 if self.narrowing >= 3:  # Quand l'aspiration atteint 300% on considère que la Terre a disparu
                     self.fallen = True
-                    if self.in_black_hole is self.goal:
-                        self.success = True
+                    self.success = self.in_black_hole is self.goal
         super().move(dt, time_scale)
         return False
 

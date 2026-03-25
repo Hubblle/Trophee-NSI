@@ -129,7 +129,7 @@ def loadAssetsFolder(assets: dict, folder_path: str) -> None:
                 try:
                     img = pygame.image.load(element.path)
                     # Les méthodes convert et convert_alpha servent à optimiser l'image afin de l'estampiller plus rapidement
-                    if img.get_alpha() != None:  # L'image possède de la transparence
+                    if format == ".png":  # L'image possède de la transparence
                         img = img.convert_alpha()
                     else:
                         img = img.convert()
@@ -282,6 +282,7 @@ class RangeInput:
         self.color = color
         self.title_color = title_color
         self.title_gap_y = title_gap_y
+        self.changed = False
         match len(range):
             case 1:
                 self.maximum = range[0]
@@ -317,10 +318,12 @@ class RangeInput:
         :param click_duration: Durée du clic de la souris
         :type click_duration: int
         """
+        value = self.value
         self.is_touching_mouse = self.touchingMouse(mouse_pos)
         if self.clicked:
             if click_duration == 0:
                 self.clicked = False
+                self.changed = False
                 return
             # On calcule la valeur numérique correspondant à la position du bouton
             self.value = (mouse_pos[0] - self.diff_x - self.x) * self.range / self.width + self.minimum
@@ -331,6 +334,7 @@ class RangeInput:
         elif click_duration == 1 and self.is_touching_mouse:
             self.clicked = True
             self.diff_x = mouse_pos[0] - self.button_x
+        self.changed = self.value != value
 
     def display(self) -> None:
         """
