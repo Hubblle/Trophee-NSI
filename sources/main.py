@@ -14,7 +14,7 @@ from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar
 
 # Constantes
 
-PRELOAD = True  # Si True : on charge les assets de tous les jeux au lancement, sinon seulement au démarrage du mini-jeu
+PRELOAD = False  # Si True : on charge les assets de tous les jeux au lancement, sinon seulement au démarrage du mini-jeu
 
 # Définition des fonctions
 
@@ -33,13 +33,14 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
     :return: True si l'utilisateur a fermé la fenêtre sinon False
     :rtype: bool
     """
-    CONFIG = game["config"]
+    CONFIG: dict = game["config"]
     SPEED = CONFIG["simulation_speed"]
     RENDERING_WIDTH = CONFIG["width"]
     RENDERING_HEIGHT = CONFIG["height"]
     FPS = CONFIG.get("FPS", False)
     FPS_COLOR = CONFIG.get("FPS_input", {})
     KEYS = [getattr(pygame, key, -1) for key in CONFIG["keys"]]  # On passe d'une liste de str (ex : 'K_a') à une liste de constante de pygame (ex : pygame.K_a)
+    WHEEL_MOTION = CONFIG.get("wheel_motion", False)
 
     pygame.display.set_caption("Physics.play - " + CONFIG["name"])
 
@@ -68,6 +69,8 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
     font = assets["fonts"]["inter.ttf"].getFont(18)
     fps_input = RangeInput(20, 30, 140, (5, SPEED), window, lambda value: f"FPS: {value}", font, 8, min(30, SPEED), **FPS_COLOR)
 
+    wheel_changes = 0  # Stocke le mouvement de la roulette de la souris
+
     while True:
 
         # On incrémente la durée de la pression des touches enfoncées
@@ -93,6 +96,8 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
             elif event.type == pygame.KEYUP:  # Une touche a été relachée
                 if event.key in KEYS:
                     keys_to_send[event.key] = 0
+            elif event.type == pygame.MOUSEWHEEL:
+                wheel_changes += event.y
             elif event.type == pygame.WINDOWSIZECHANGED:
                 # On empêche de réduire la taille de la fenêtre en dessous du minimum donné par le fichier 'config.json'
                 min_width = CONFIG.get("window_min_width", 360)
@@ -133,10 +138,15 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
         mouse_sent = {"x": mouse["x"], "y": mouse["y"], "click": mouse["click"].copy()}
         if fps_input.clicked:  # Si le bouton est cliqué, on n'envoie pas le clic au mini-jeu
             mouse_sent["click"][0] = 0
+
+        options = {}
         if FPS:
-            tick(keys=keys_to_send, mouse=mouse_sent, fps=clock.get_fps())
-        else:
-            tick(keys=keys_to_send, mouse=mouse_sent)
+            options["fps"] = clock.get_fps()
+        if WHEEL_MOTION:
+            options["wheel"] = wheel_changes
+        wheel_changes = 0
+
+        tick(keys=keys_to_send, mouse=mouse_sent, **options)
 
         for event in events():
             if event["type"] == "quit":  # Le mini-jeu est fini

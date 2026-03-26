@@ -1,11 +1,17 @@
 {
     "name": "Jeu de la vie",
     "description":  "Le jeu de la vie de Conway est un automate cellulaire, c'est à dire une simulation de cellules dans une grille en 2 dimensions. Celui-ci est très simple car il n'obéit qu'à 2 règles : à chaque itération les cellules vivantes ayant moins de 2 voisins (cellule vivante et adjacente) ou plus de 4 meurent de solitude/surpopulation et les cellules mortes ayant 3 voisins reviennent à la vie. Ces règles sont extrêmement simple mais elles mènent à des résultats beaucoup plus complexes et intéressants que ce que l'on pourrait croire...",
-    "simulation_speed": 30,
-    "keys": ["K_UP", "K_RIGHT", "K_LEFT", "K_DOWN", "K_ESCAPE"],
+    "simulation_speed": 100,
+    "keys": ["K_UP", "K_RIGHT", "K_DOWN", "K_LEFT", "K_SPACE", "K_LSHIFT", "K_z", "K_LCTRL", "K_x", "K_c", "K_LALT", "K_ESCAPE"],
     "width": 1600,
     "height": 900,
-    "background_color": [255, 255, 255],
+    "background_color": [230, 230, 230],
     "window_min_width": 480,
-    "window_min_height": 270
+    "window_min_height": 270,
+    "wheel_motion": true,
+    "FPS_input": {
+        "background_color": [180, 180, 180],
+        "color": [210, 210, 210],
+        "title_color": [100, 100, 100]
+    }
 }
