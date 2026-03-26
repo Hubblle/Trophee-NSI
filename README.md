@@ -57,9 +57,9 @@ Le projet a été réalisé par un groupe de quatres élèves de première, tous
 
 **Lubin Tschirhart -** Rédaction des documents et documentations du dossier technique, ainsi que le développement la sandbox "WaterBox"
 
-**Line Vacher--Drevet -** Aide  à l'organisation du dossier, réalisations graphiques et aide au design et concept des jeux.
+**Line Vacher--Drevet -** Aide à l'organisation du dossier, réalisations graphiques, aide au design et concept des jeux, ainsi qu'une aide sur le development de la sandbox "WaterBox". Responsable de la répartition des rôles et du travail ainsi que du design sonore.
 
-**Erwan Goasdoue -** Supervision graphique du projet, aide au design, et responsable des tests.
+**Erwan Goasdoue -** Supervision graphique du projet, aide au design, responsable des tests, et assistance au développement du jeu "SpaceGolf".
 
 ## Note: Utilisation de l'IA
 Nous pensons que les intelligences artificielles peuvent être bénéfique lorsqu'elles sont utilisées de manière cohérentes et réfléchies, nous avons alors modéré nos usages, et les avons restreint à des utilisations qui ne touchent pas à une implémentation directe dans le code fournis dans le projet fini.
