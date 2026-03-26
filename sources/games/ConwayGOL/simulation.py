@@ -20,14 +20,16 @@ import pygame
 from math import floor, ceil
 from os import path
 from json import dump
+from typing import Callable
 
 pygame.init()  # Initiation de pygame
 window_size = (1600, 900)
 FOLDER_PATH = path.dirname(__file__)  # Chemin absolu du dossier contenant ce script
 
-class RangeButton:  # Class du bouton de vitesse de simulation
+class RangeButton:
+    """Représente une entrée numérique sous forme de bouton réglable"""
     
-    def __init__(self, y, button_range, set_target, get_target, offset_x, maxi):
+    def __init__(self, y: int, button_range: int, set_target: Callable, get_target: Callable, offset_x: int, maxi: int):
         self.is_clicked = False
         self.range = button_range
         self.x = 0
@@ -37,11 +39,13 @@ class RangeButton:  # Class du bouton de vitesse de simulation
         self.offset_x = offset_x
         self.maxi = (lambda: maxi) if isinstance(maxi, int) else maxi
         
-    def display(self):  # Affiche le bouton
+    def display(self):
+        """Affiche le bouton"""
         self.update()
         pygame.draw.circle(window, WHITE if self.is_clicked else LIGHT_GRAY, (self.x, self.y), 8)
         
     def update(self):
+        """A appeler régulièrement pour le bon fonctionnement du bouton"""
         if self.is_clicked:
             if mouse_data[0] > 0:
                 self.set_target(max(1, min(self.maxi(), floor((mouse_data[1]-window_size[0]//2+self.range//2-self.offset_x)*(self.maxi()-1)/self.range+0.5)+1)))
@@ -49,14 +53,16 @@ class RangeButton:  # Class du bouton de vitesse de simulation
                 self.is_clicked = False
         self.x = window_size[0]//2-self.range//2+self.offset_x+round((self.get_target()-1)/(self.maxi()-1)*self.range)
         
-    def onMouseClick(self, x, y):  # Clic de la souris
+    def onMouseClick(self, x, y):
+        """Doit être appelé au clic de la souris"""
         if (self.x-x)**2+(self.y-y)**2 <= 64:
             self.is_clicked = True
             return True
         return False
     
     
-class CatalogItem:  # Class représentant les structures du catalogue
+class CatalogItem:
+    """Représente les éléments se trouvant dans le catalogue"""
     
     SIZE = 140
     PREVIEW_SIZE = 120
@@ -65,7 +71,7 @@ class CatalogItem:  # Class représentant les structures du catalogue
     FONT = pygame.font.SysFont("arial", 18)
     catalog: list = None
     
-    def __init__(self, index):
+    def __init__(self, index: int):
         self.index = index
         if index > CatalogItem.max_index:
             CatalogItem.max_index = index
@@ -139,7 +145,8 @@ class Node:
         self.result = [None] * (self.depth - 1)
         self.hash = hash((id(self.a), id(self.b), id(self.c), id(self.d)))
             
-    def evolve(self):  # Fonction de simulation utilisant l'algorithme Hashlife pour compresser l'espace et le temps
+    def evolve(self):
+        """Fonction de simulation utilisant l'algorithme Hashlife pour compresser l'espace et le temps"""
         
         # Si la node a déjà été calculée au moins 1 fois, on réutilise le résultat enregistré
         self_temporal_compression = min(temporal_compression_level, len(self.result)-1)
@@ -158,6 +165,7 @@ class Node:
                 d = 1 < dn < 4 if self.d.a else dn == 3
                 result = newNode(1, a, b, c, d)
             else:
+                # On créé des nodes intermédiaires qu'on simule séparémment avant de les regrouper pour obtenir la node recherchée
                 node1 = self.a
                 node2 = newNode(self.depth-1, self.a.b, self.b.a, self.a.d, self.b.c)
                 node3 = self.b
@@ -343,11 +351,14 @@ def displayCells():  # Affiche les cellules
     
 def onMouseClick(nb_clicks, x, y):  # Clic de souris
     global brush, opening_catalog, copied_item, copy_rect, save_catalog
+
+    # On vérifie que les boutons n'intercepent pas le clic
     if nb_clicks == 1 and (speed_button.onMouseClick(x, y) or clearness_button.onMouseClick(x, y) or temporal_button.onMouseClick(x, y)):
         return
-    if nb_clicks > 0:
-        1
+
     if simulating: return
+
+    # Si le catalogue est ouvert on vérifie différentes actions : sélection de stucture, suppression
     if opening_catalog:
         if mouse_data[0] == 1 and mouse_data[2] < window_size[1]-16-catalog_y:
             opening_catalog = False
@@ -364,7 +375,7 @@ def onMouseClick(nb_clicks, x, y):  # Clic de souris
                                 catalog_item_.index -= 1
                         save_catalog = True
                     else:
-                        if catalog_item.instant_paste:
+                        if catalog_item.instant_paste:  # Structure trop grosse = collage instantané
                             w, h = catalog_item.surface.get_size()
                             i = floor(scroll_y / (displayed_node_size / 2**min_depth_display))
                             j = floor(scroll_x / (displayed_node_size / 2**min_depth_display))
@@ -374,11 +385,16 @@ def onMouseClick(nb_clicks, x, y):  # Clic de souris
                         opening_catalog = False
                     return
         return
+
+    # On regarde si l'utilisateur cherche à ouvrir le catalogue
     elif mouse_data[0] == 1 and mouse_data[2] >= window_size[1]-16:
         opening_catalog = True
         return
+    
+    # On calcule les coordonnées de la cellule cliquée
     i = floor((y+scroll_y-window_size[1]//2) / (displayed_node_size / 2**min_depth_display))
     j = floor((x+scroll_x-window_size[0]//2) / (displayed_node_size / 2**min_depth_display))
+
     if copied_item:
         if nb_clicks == 1:
             w, h = copied_item.surface.get_size()
@@ -386,34 +402,47 @@ def onMouseClick(nb_clicks, x, y):  # Clic de souris
             if keys[pygame.K_LSHIFT] == 0:
                 copied_item = None
         return
+    
     if nb_clicks == 1:
         if keys[pygame.K_LSHIFT] > 0:
-            copy_rect = [j, i, 0, 0]
+            copy_rect = [j, i, 0, 0]  # Si shift est pressé on commence la zone de sélection
         else:
-            brush = root.isLiving(root_x, root_y, j, i)
+            brush = root.isLiving(root_x, root_y, j, i)  # On regarde si la cellule ciblée est vivante ou morte
     elif copy_rect:
+        # On met à jour la taille du rectangle de sélection
         copy_rect[2] = j-copy_rect[0]
         copy_rect[3] = i-copy_rect[1]
+    
     if brush == None: return
     setCell(j, i, not brush)
         
 
 def displayStats():  # Affiche le bandeau de statistique en haut de l'écran
+
     pygame.draw.rect(window, BLACK, (window_size[0]//2-400, -40, 800, 110), border_radius=40)
+
     txt = font.render(f"Vitesse de simulation : {simulation_speed} ticks/s", True, WHITE)
     txt_size = txt.get_size()
     window.blit(txt, (window_size[0]//2-txt_size[0]//2-250, 20-txt_size[1]//2))
+
     pygame.draw.rect(window, LIGHT_GRAY, (window_size[0]//2-340, 40, 180, 5), border_radius=2)
+
     speed_button.display()
+
     txt = font.render(f"Compression temporelle : {2**temporal_compression_level} gen/tick", True, WHITE)
     txt_size = txt.get_size()
     window.blit(txt, (window_size[0]//2-txt_size[0]//2+250, 20-txt_size[1]//2))
+
     pygame.draw.rect(window, LIGHT_GRAY, (window_size[0]//2+160, 40, 180, 5), border_radius=2)
+
     temporal_button.display()
+
     txt = font.render(f"Netteté : {clearness} %", True, WHITE)
     txt_size = txt.get_size()
     window.blit(txt, (window_size[0]//2-txt_size[0]//2, 20-txt_size[1]//2))
+
     pygame.draw.rect(window, LIGHT_GRAY, (window_size[0]//2-80, 40, 160, 5), border_radius=2)
+
     clearness_button.display()
     
 
@@ -424,7 +453,8 @@ def setCell(x, y, value, check_size=True):  # Affecte une valeur à une cellule
         while maxi > 2**(root_depth-3):
             increaseRootSize()
     root = root.setCell(root_x, root_y, x, y, value)
-    
+
+
 def changeCellSize(value):  # Zoom / Dezoom
     global zoom, scroll_x, scroll_y
     real_scroll_x = scroll_x / displayed_node_size
@@ -563,6 +593,16 @@ def reset() -> None:
 
 
 def simulate(keys_: dict, mouse: tuple, wheel: int):
+    """
+    Gère les entrées de l'utilisateur et la simulation.
+
+    :param keys_: Les touches pressées
+    :type keys_: dict
+    :param mouse: Les informations liées à la souris
+    :type mouse: tuple
+    :param wheel: Le mouvement de la molette
+    :type wheel: int
+    """
     global opening_catalog, catalog_y, copied_item, window_size, init_simulation, scroll_x, scroll_y, last_matrix, keys, mouse_data, \
         main_loop_ticks, copy_rect, brush, simulating, root, root_depth, temporal_compression_level, simulation_loop_ticks, save_catalog
     
@@ -641,6 +681,12 @@ def simulate(keys_: dict, mouse: tuple, wheel: int):
 
 
 def render(surface: pygame.Surface):
+    """
+    Affiche les cellules, le catalogue et les boutons de réglages.
+
+    :param surface: La surface sur laquelle faire l'affichage
+    :type surface: pygame.Surface
+    """
     global window
     window = surface
 
@@ -704,4 +750,3 @@ catalog_items = []
 copied_item = None
 copy_rect = None
 save_catalog = False
-
