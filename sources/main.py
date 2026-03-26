@@ -10,7 +10,7 @@ if not hasattr(pygame.Surface, "width"):
     print("Désinstallez pygame et pygame-ce puis réinstallez pygame-ce\n")
     exit()
 
-from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar
+from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar, Button
 
 # Constantes
 
@@ -204,6 +204,12 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
     
     # On charge les polices
     font = assets["fonts"]["inter.ttf"]
+
+    def onClickPlay() -> None:
+        play.game = game_idx
+    
+    play = Button(lambda: window.width//2, lambda: window.height//2, assets["images"]["play.png"], onClickPlay, window)
+    play.game = -1
         
     while True:
         
@@ -244,6 +250,10 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
         
         # On prend le plus grand afin d'être sûr de remplir le fond de la fenêtre même si une partie de l'image risque d'être rognée
         scale = max(scale_x, scale_y)
+
+        play.tick(*mouse_pos, click)
+        if play.game != -1:
+            return games[play.game]
         
         # On calcule la position des flèches et on vérifie les collisions avec la souris
         arrow_y = window.height//2-arrow_size[1]//2
@@ -278,6 +288,9 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
         # On ajoute les flèches
         window.blit(arrow_right, (arrow_right_x, arrow_y))
         window.blit(arrow_left, (arrow_left_x, arrow_y))
+
+        # On ajoute le bouton jouer
+        play.display()
         
         # On ajoute le texte
         title = font.getFont(window.height//8).render(game["config"]["name"], True, (255, 255, 255))

@@ -351,16 +351,16 @@ class RangeInput:
 
 class Button:
 
-    def __init__(self, x: int, y: int, image: pygame.Surface, onclick: Callable[[], None], window: pygame.Surface = None):
+    def __init__(self, x: int | Callable[[], int], y: int | Callable[[], int], image: pygame.Surface, onclick: Callable[[], None], window: pygame.Surface = None):
         """
         La class Button permet de créer facilement des boutons. 
         Après l'initialisation, il suffit d'appeler régulièrement 'tick' 
         pour que le bouton soit réactif et 'display' pour l'afficher.
 
         :param x: Abscisse du centre du bouton
-        :type x: int
+        :type x: int | () -> int
         :param y: Ordonnée du centre du bouton
-        :type y: int
+        :type y: int | () -> int
         :param image: L'image du bouton
         :type image: pygame.Surface
         :param onclick: La fonction qui sera appelée quand la souris cliquera sur le bouton
@@ -368,8 +368,8 @@ class Button:
         :param window: La surface sur laquelle sera dessinée le bouton, si elle vaut None elle doit être passée en paramètre de display
         :type window: pygame.Surface | None
         """
-        self. x = x
-        self.y = y
+        self._x = x
+        self._y = y
         self.mouseover = False
         self.image = image
         self.onclick = onclick
@@ -378,6 +378,22 @@ class Button:
         highlight = self.mask.to_surface(setcolor=(255, 255, 255, 25), unsetcolor=(0, 0, 0, 0))
         self.highlighted = self.image.copy()
         self.highlighted.blit(highlight, (0, 0))
+    
+    @property
+    def x(self) -> int:
+        return self._x() if callable(self._x) else self._x
+
+    @x.setter
+    def x(self, v) -> None:
+        self._x = v
+    
+    @property
+    def y(self) -> int:
+        return self._y() if callable(self._y) else self._y
+
+    @y.setter
+    def y(self, v) -> None:
+        self._y = v
     
     def tick(self, mouse_x: int, mouse_y: int, click_duration: int) -> bool:
         """
