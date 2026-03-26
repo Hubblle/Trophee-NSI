@@ -14,7 +14,7 @@ from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar
 
 # Constantes
 
-PRELOAD = False  # Si True : on charge les assets de tous les jeux au lancement, sinon seulement au démarrage du mini-jeu
+PRELOAD = True  # Si True : on charge les assets de tous les jeux au lancement, sinon seulement au démarrage du mini-jeu
 
 # Définition des fonctions
 

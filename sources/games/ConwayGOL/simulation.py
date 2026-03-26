@@ -550,6 +550,18 @@ def setTemporalCompressionLevel(v):
     temporal_compression_level = v-1
 
 
+def reset() -> None:
+    """
+    Reset la grille.
+    """
+    global root_depth, root, temporal_compression_level, simulating, scroll_x, scroll_y
+    root_depth = 4
+    root = getEmptyNode(root_depth)
+    temporal_compression_level = min(temporal_compression_level, 3)
+    simulating = False
+    scroll_y = scroll_x = 0
+
+
 def simulate(keys_: dict, mouse: tuple, wheel: int):
     global opening_catalog, catalog_y, copied_item, window_size, init_simulation, scroll_x, scroll_y, last_matrix, keys, mouse_data, \
         main_loop_ticks, copy_rect, brush, simulating, root, root_depth, temporal_compression_level, simulation_loop_ticks, save_catalog
@@ -585,9 +597,7 @@ def simulate(keys_: dict, mouse: tuple, wheel: int):
             root = last_matrix
             
         if keys[pygame.K_x] == 1 and keys[pygame.K_LCTRL] > 0:
-            root_depth = 4
-            root = getEmptyNode(root_depth)
-            temporal_compression_level = min(temporal_compression_level, 3)
+            reset()
             
         if keys[pygame.K_c] == 1 and keys[pygame.K_LCTRL] > 0:
             edit_cache.clear()

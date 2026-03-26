@@ -2,23 +2,19 @@
 
 import pygame
 from os import path
-from utils import loadAssetsFolder
-from .simulation import CatalogItem, catalog_items, simulate, render
+from utils import loadAssetsFolder, PopUp, Button
+from .simulation import CatalogItem, catalog_items, simulate, render, reset
 
+# Information importante : ce jeu a été développé peu avant le projet Physics.play et a ensuite été importé ce qui explique sa structure un peu étrange
 
-WINDOW_WIDTH, WINDOW_HEIGHT = WINDOW_SIZE = (1600, 900)
 FOLDER_PATH = path.dirname(__file__)  # Chemin absolu du dossier contenant ce script
+WINDOW_WIDTH, WINDOW_HEIGHT = WINDOW_SIZE = (1600, 900)
 
 event_list = []  # Liste des évènements
 
 surface = pygame.Surface(WINDOW_SIZE)  # La surface utilisée dans la fonction display
-
-# Préciser le type de la variable est facultatif mais permet à l'éditeur de code de proposer l'auto-complétion
-# Les variables initialisées à None sont des variables globales qui seront initialisées dans la fonction load
-
-
-# On initialise les variables qui vont contenir les assets
-background: pygame.Surface = None
+info: PopUp = None
+info_button: Button = None
 
 # On définit les 5 fonctions principales
 
@@ -26,9 +22,20 @@ def load() -> None:
     """
     La fonction load charge les assets.
     """
+    def onClickClose() -> None:
+        info.displayed = False
+    
+    def openInfo() -> None:
+        info.displayed = True
+    
+    global info, info_button
     
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
+
+    info = PopUp(surface, WINDOW_WIDTH//2, WINDOW_HEIGHT//2, assets["images"]["info.png"],
+                 Button(380, -280, assets["images"]["close.png"], onClickClose))
+    info_button = Button(WINDOW_WIDTH-50, 50, assets["images"]["info_button.png"], openInfo, surface)
 
     CatalogItem.catalog = assets["json"]["catalog.json"]
     for i in range(len(CatalogItem.catalog)):
@@ -40,6 +47,8 @@ def init() -> None:
     Initialise/réinitialise le mini-jeu
     """
     event_list.clear()
+    info.displayed = False
+    reset()
 
 
 def tick(keys: dict, mouse: dict, wheel: int) -> None:
@@ -50,14 +59,24 @@ def tick(keys: dict, mouse: dict, wheel: int) -> None:
     :type keys: dict
     :param mouse: Dictionnaire contenant les informations liées à la souris `{'x': int, 'y'; int, 'click': list[int, int, int]}`
     :type mouse: dict
+    :param wheel: Mouvement de la roulette de la souris depuis le dernier tick
+    :type wheel: int
     """
 
-    simulate(keys, [mouse["click"][0], mouse["x"], mouse["y"]], wheel)
+    click = 0 if info.displayed else mouse["click"][0]
 
-    # Option pour mettre en pause
+    if info_button.tick(mouse["x"], mouse["y"], click):
+        click = 0
+
+    simulate(keys, [click, mouse["x"], mouse["y"]], wheel)
+
+    if info.displayed:
+        info.tick(mouse["x"], mouse["y"], mouse["click"][0])
+
+    # Option pour quitter
 
     if keys[pygame.K_ESCAPE]:
-        event_list.append({"type": "pause"})
+        event_list.append({"type": "quit"})
 
 
 def display() -> pygame.Surface:
@@ -70,6 +89,9 @@ def display() -> pygame.Surface:
     surface.fill((255, 255, 255))
 
     render(surface)
+    info_button.display()
+    if info.displayed:
+        info.display()
     
     return surface
 
