@@ -269,7 +269,7 @@ def load() -> None:
     time_input = RangeInput(230, WINDOW_HEIGHT-36, 160, (600, 14400, 600), surface, convertTime, fonts.getFont(24), 12, 5400)
     mode_button = RangeInput(WINDOW_WIDTH-120, 36, 60, (0, 1), surface, lambda value: f"Mode : {"édition" if value else "jeu"}", fonts.getFont(18), 9, 0)
     mass_input = RangeInput(WINDOW_WIDTH-150, 100, 100, (24, 28, 0.1), surface, lambda value: f"Masse : {10**(value if type_input.value < 3 else value+8):.2g} kg", fonts.getFont(20), 10, 25)
-    radius_input = RangeInput(WINDOW_WIDTH-150, 170, 100, (7.3, 8.3, 0.1), surface, lambda value: f"Rayon : {10**value:.2g} m", fonts.getFont(20), 10, 7.7)
+    radius_input = RangeInput(WINDOW_WIDTH-150, 170, 100, (7.3, 8.3, 0.05), surface, lambda value: f"Rayon : {10**value:.2g} m", fonts.getFont(20), 10, 7.7)
     type_input = RangeInput(WINDOW_WIDTH-150, 240, 100, (0, 3), surface, lambda i: f"Type : {f"étoile#{i+1}" if i < 3 else "trou noir"}", fonts.getFont(20), 10, 0)
     trials_input = RangeInput(WINDOW_WIDTH-280, 36, 100, (1, 20), surface, lambda value: f"Essais max : {value}", fonts.getFont(18), 9, 1)
 
