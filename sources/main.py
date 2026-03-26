@@ -346,6 +346,9 @@ def main() -> None:
     scan_lenght = len(scan)
     for element in scan:
         if element.is_dir():
+            # Exception : on ne charge pas le mini-jeu 'template' qui sert d'exemple aux développeurs
+            if element.name == "template":
+                continue
             # On vérifie que tous les fichiers indispensables existent
             if all(path.exists(path.join(element.path, needed_file)) for needed_file in NEEDED_FILES):
                 print("[Info] Dossier de mini-jeu détecté :", element.name)
