@@ -5,7 +5,7 @@ from os import path
 from utils import loadAssetsFolder, PopUp, Button
 from .simulation import CatalogItem, catalog_items, simulate, render, reset
 
-# Information importante : ce jeu a été développé peu avant le projet Physics.play et a ensuite été importé ce qui explique sa structure un peu étrange
+# Information importante : ce jeu a été développé "à part" du système de mini-jeux et a ensuite été importé ce qui explique sa structure un peu étrange
 
 FOLDER_PATH = path.dirname(__file__)  # Chemin absolu du dossier contenant ce script
 WINDOW_WIDTH, WINDOW_HEIGHT = WINDOW_SIZE = (1600, 900)
