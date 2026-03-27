@@ -22,6 +22,7 @@ surface = pygame.Surface(WINDOW_SIZE)
 # Les sliders
 viscosity : RangeInput = None
 stiffness : RangeInput = None
+blur : RangeInput = None
 
 
 # On initie les variables qui vont contenir les assets
@@ -54,7 +55,7 @@ def init() -> None:
     Initialise/réinitialise le mini-jeu
     """
     
-    global sph_sim, flow_x, step, count, viscosity, stiffness
+    global sph_sim, flow_x, step, count, viscosity, stiffness,blur
     
     event_list.clear()
     # Initialise la simulation avec 20 particules en jet d'eau
@@ -62,7 +63,7 @@ def init() -> None:
     
     viscosity = RangeInput(1400, 30, 50, (0.01,0.9,0.01), surface, lambda value:f"Viscosité: {round(value,3)}", pygame.font.Font(), 4, sph_sim.viscosity)
     stiffness = RangeInput(1400, 60, 50, (1,200,1), surface, lambda value:f"Facteur de pression: {value}", pygame.font.Font(), 4, sph_sim.gas_stiffness)
-
+    blur = RangeInput(1400, 90, 50, (1,25,1), surface, lambda value:f"Flou: {value}", pygame.font.Font(), 4, 15)
 
 i = 0
 
@@ -75,13 +76,14 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
     :param mouse: Dictionnaire contenant les informations liées à la souris `{'x': int, 'y'; int, 'click': list[int, int, int]}`
     :type mouse: dict
     """
-    global mouse_pos, cam_x, cam_y, sph_sim, l_fps, i, flow_x, world_x, world_y; viscosity, stiffness
+    global mouse_pos, cam_x, cam_y, sph_sim, l_fps, i, flow_x, world_x, world_y; viscosity, stiffness,blur
     
     mouse_pos_interact = (-1000,-1000)
 
     #Tick les bouttons
     viscosity.tick((mouse["x"],mouse["y"]),mouse["click"][0])
     stiffness.tick((mouse["x"],mouse["y"]),mouse["click"][0])
+    blur.tick((mouse["x"],mouse["y"]),mouse["click"][0])
     
     l_fps = fps
     
@@ -101,7 +103,7 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
         #world_y = mouse["y"] + cam_y
     
     if mouse["click"][1] > 0:
-        if len(sph_sim.particles) < 600:
+        if len(sph_sim.particles) < 300:
             if sph_sim and (0 < world_x < sph_sim.width and 0 < world_y < sph_sim.height):
                 sph_sim.add_particle(world_x, world_y)
             
@@ -116,7 +118,7 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
     if keys[pygame.K_ESCAPE]:
         event_list.append({"type": "pause"})
 
-    if i < 1000:
+    if i < 8000:
         sph_sim.step(dt=1/70, mouse=(-1,-1), viscosity=round(viscosity.value,3), stiffness=stiffness.value)  # timestep arbitraire
         i+=1
     
@@ -137,7 +139,7 @@ def display() -> pygame.Surface:
     
     """
     
-    global background, container, surface, viscosity, stiffness
+    global background, container, surface, viscosity, stiffness,blur
     
     
     
@@ -158,15 +160,16 @@ def display() -> pygame.Surface:
     #Afficher les bouttons
     stiffness.display()
     viscosity.display()
+    blur.display()
     
     
     # Dessiner les particules d'eau
     if sph_sim:
-        sph_sim.draw(surface, cam_x, -50)
+        sph_sim.draw(surface, cam_x, -50,blur=blur.value)
 
         # Afficher les informations
         font = pygame.font.Font(None, 24)
-        text = font.render(f"Particules: {sph_sim.get_particle_count()} (max 600)", True, (0, 0, 0))
+        text = font.render(f"Particules: {sph_sim.get_particle_count()} (max 300)", True, (0, 0, 0))
         surface.blit(text, (10, 20))
         help_text = font.render("Cliquer et bouger pour se déplacer, clique molette ajoute des particules", True, (0, 0, 0))
         surface.blit(help_text, (10, 40))

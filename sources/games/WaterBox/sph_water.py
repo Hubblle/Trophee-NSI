@@ -18,7 +18,7 @@ class SPHParticle:
         self.radius = radius
         self.density = 1.0
         self.pressure = 0.0
-        self.color = [40, 0, 255]  # bleu foncé
+        self.color = [40, 0, 255, 255]  # bleu foncé
 
     def reset_acceleration(self)-> None:
         """Remet l'acceleration à 0"""
@@ -340,16 +340,20 @@ class SPHSimulation:
         """Ajoute une nouvelle particule"""
         self.particles.append(SPHParticle(x, y))
 
-    def draw(self, surface, camera_x, camera_y):
+    def draw(self, surface:pygame.surface.Surface, camera_x, camera_y,blur):
         """Dessine toutes les particules"""
         
-        """#Dessine le fond de la simulation:
-        rect = pygame.Rect(0-camera_x, 0-camera_y, self.width, self.height)
-        pygame.draw.rect(surface, (255,255,255), rect)"""
+        #Surface qui sera flouté plus tard:
+        non_blurred_surface= pygame.surface.Surface((self.width, self.height),pygame.SRCALPHA, 32)
         
         
         for particle in self.particles:
-            particle.draw(surface, camera_x, camera_y)
+            particle.draw(non_blurred_surface, 0, 0)
+            
+        #Applique le flou
+        
+        blurred_surface = pygame.transform.box_blur(non_blurred_surface, blur)
+        surface.blit(blurred_surface,(-camera_x, -camera_y))
 
     def get_particle_count(self):
         """Retourne le nombre de particules"""
