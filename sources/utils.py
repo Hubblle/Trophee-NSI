@@ -45,7 +45,11 @@ def loadGame(folder: str, folder_path: str) -> dict | None:
     game["menu_background"] = pygame.image.load(path.join(folder_path, "games", folder, "menu_background.png")).convert()
     
     # On importe dynamiquement les fonctions principales du fichier game.py
-    module = __import__(f"games.{folder}.game", fromlist=["tick", "display", "events", "init", "load"])
+    fromlist = ["tick", "display", "events", "init", "load"]
+    quit_function = game["config"].get("quit_function", False)
+    if quit_function:
+        fromlist.append("quit")
+    module = __import__(f"games.{folder}.game", fromlist=fromlist)
     
     # On stocke les 4 fonctions principales dans le dictionnaire
     try:
@@ -54,6 +58,8 @@ def loadGame(folder: str, folder_path: str) -> dict | None:
         game["events"] = module.events
         game["init"] = module.init
         game["load"] = module.load
+        if quit_function:
+            game["quit"] = module.quit
     except AttributeError:
         return None
     return game

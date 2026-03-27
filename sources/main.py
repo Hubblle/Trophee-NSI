@@ -50,6 +50,7 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
     events = game["events"]
     init = game["init"]
     load = game["load"]
+    quit = game.get("quit", lambda: None)
     
     # Si le jeu n'a encore jamais été chargé, on le fait
     if not game["loaded"]:
@@ -89,6 +90,7 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:  # L'utilisateur a fermé la fenêtre
+                quit()
                 return True
             if event.type == pygame.KEYDOWN:  # Une touche a été pressée
                 if event.key in KEYS:
@@ -150,6 +152,7 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
 
         for event in events():
             if event["type"] == "quit":  # Le mini-jeu est fini
+                quit()
                 return False
 
         cooldown_before_render += fps / SPEED
@@ -158,6 +161,7 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
             game_rendering = display()  # On récupère le rendu du mini-jeu
             if game_rendering.get_size() != (RENDERING_WIDTH, RENDERING_HEIGHT):
                 print(f"[Erreur] La taille du rendu graphique du mini-jeu '{CONFIG["name"]}' ne correspond pas à sa configuration")
+                quit()
                 return False
             
             color = CONFIG.get("background_color", (0, 0, 0))

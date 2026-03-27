@@ -154,7 +154,7 @@ def setTargetTo(body: GraphicalCelestialBody) -> None:
     type_input.value = 3 if body.is_black_hole else stars_images["suns"].index(body.original_image)
 
 
-# On définit les 5 fonctions principales
+# On définit les 6 fonctions principales
 
 def load() -> None:
     """
@@ -191,7 +191,11 @@ def load() -> None:
             saveLevelInMemory()
             saveLevelsToDisk()
             edited = False
-        level = min(level + 1, len(levels) - 1)
+        if level+1 < len(levels):
+            level += 1
+        elif editing:
+            level += 1
+            levels.append({"worm_hole": [2e8, 0], "suns": [], "black_holes": [], "trials": 3})
         level_end.displayed = False
         loadLevel(level)
 
@@ -306,7 +310,7 @@ def tick(keys: dict, mouse: dict) -> None:
     :param mouse: Dictionnaire contenant les informations liées à la souris `{'x': int, 'y'; int, 'click': list[int, int, int]}`
     :type mouse: dict
     """
-    global mouse_pos, cam_x, cam_y, launching, scale, time_scale, trials, editing, edited, max_trials, edit_target
+    global mouse_pos, cam_x, cam_y, launching, scale, time_scale, trials, editing, edited, max_trials, edit_target, trials
 
     mouse_click = mouse["click"][0]  # On utilise une variable temporaire pour pouvoir stopper la propagation d'un clic si celui-ci est intercepté par un bouton
 
@@ -370,6 +374,7 @@ def tick(keys: dict, mouse: dict) -> None:
         trials_input.tick((mouse["x"], mouse["y"]), mouse_click)
         if trials_input.changed:
             max_trials = trials_input.value
+            trials = min(trials, max_trials)
         if trials_input.clicked:
             mouse_click = 0
         if add_button.tick(*param):
@@ -492,6 +497,11 @@ def display() -> pygame.Surface:
     text = font.render(f"Essais restants : {trials} sur {max_trials}", True, (255, 255, 255))
     surface.blit(text, (36, WINDOW_HEIGHT - text.height - 85))
 
+    # On affiche le numéro du niveau
+    font = fonts.getFont(24)
+    text = font.render(f"Niveau {level+1} / {len(levels)}", True, (255, 255, 255))
+    surface.blit(text, (WINDOW_WIDTH//2-text.width//2, 60))
+
     # On affiche les pop-up
     if level_end.displayed:
         level_end.display()
@@ -508,10 +518,13 @@ def events() -> list:
     :return: Retourne la liste des évènements s'étant produit dans le mini-jeu. Exemple `['quit']`
     :rtype: list[str]
     """
-    if edited and any(event.get("type", None) == "quit" for event in event_list):
-        saveLevelInMemory()
-        saveLevelsToDisk()
     events_copy = event_list.copy()
     event_list.clear()  # On vide la liste des évènements pour ne pas les renvoyer à nouveau au prochain appel
     return events_copy
+
+
+def quit() -> None:
+    if edited:
+        saveLevelInMemory()
+        saveLevelsToDisk()
     

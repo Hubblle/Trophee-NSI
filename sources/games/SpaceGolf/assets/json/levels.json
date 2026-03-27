@@ -46,5 +46,14 @@
     ],
     "black_holes": [],
     "trials": 1
+  },
+  {
+    "worm_hole": [
+      200000000.0,
+      0
+    ],
+    "suns": [],
+    "black_holes": [],
+    "trials": 3
   }
 ]
