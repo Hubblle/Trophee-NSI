@@ -51,6 +51,10 @@ radius_input: RangeInput = None
 type_input: RangeInput = None
 trials_input: RangeInput = None
 edited = False
+music: pygame.Sound = None
+click_sound: pygame.Sound = None
+lost_sound: pygame.Sound = None
+launch_sound: pygame.Sound = None
 
 # On définit les fonctions secondaires
 
@@ -182,11 +186,13 @@ def load() -> None:
             return f"1px : {value} m"
     
     def onClickHome() -> None:
+        click_sound.play()
         level_end.displayed = False
         event_list.append({"type": "quit"})
     
     def onClickNext() -> None:
         global level, edited
+        click_sound.play()
         if edited:
             saveLevelInMemory()
             saveLevelsToDisk()
@@ -201,6 +207,7 @@ def load() -> None:
 
     def onClickPrevious() -> None:
         global level, edited
+        click_sound.play()
         if edited:
             saveLevelInMemory()
             saveLevelsToDisk()
@@ -211,6 +218,7 @@ def load() -> None:
     
     def onClickRestart() -> None:
         global cam_x, cam_y, trials
+        click_sound.play()
         cam_x = cam_y = 0
         trials = max_trials
         earth.reset()
@@ -218,6 +226,7 @@ def load() -> None:
     
     def onClickAdd() -> None:
         global edit_target
+        click_sound.play()
         body = GraphicalCelestialBody(cam_x*scale, cam_y*scale, 1e25, 7e7, stars_images["suns"][0], surface, screenPosition)
         celestial_bodies.append(body)
         earth.addInteraction(body)
@@ -225,12 +234,14 @@ def load() -> None:
     
     def onClickRemove() -> None:
         global edit_target
+        click_sound.play()
         if edit_target in celestial_bodies:
             celestial_bodies.remove(edit_target)
         edit_target = None
     
     global background, zoom_input, time_input, earth, worm_hole, level_end, levels, fonts, restart_button, previous_button, \
-        next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input, remove_button
+        next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input, remove_button, \
+        lost_sound, click_sound, launch_sound, music
     
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
@@ -284,6 +295,12 @@ def load() -> None:
     add_button = Button(WINDOW_WIDTH-340, 36, assets["images"]["add.png"], onClickAdd, surface)
     remove_button = Button(WINDOW_WIDTH-400, 36, assets["images"]["remove.png"], onClickRemove, surface)
 
+    # On récupère les sons
+    lost_sound  = assets["sounds"]["lost.mp3"]
+    click_sound = assets["sounds"]["click.mp3"]
+    music = assets["sounds"]["music.mp3"]
+    launch_sound = assets["sounds"]["launch.mp3"]
+
 
 def init() -> None:
     """
@@ -299,6 +316,7 @@ def init() -> None:
     level_end.displayed = False
     zoom_input.value = 100000
     time_input.value = 5400
+    music.play(-1)
 
 
 def tick(keys: dict, mouse: dict) -> None:
@@ -389,6 +407,7 @@ def tick(keys: dict, mouse: dict) -> None:
             launch_speed.coordinates = earth_x - mouse["x"], earth_y - mouse["y"]
             if mouse_click == 0:
                 launching = False
+                launch_sound.play()
                 earth.speed.direction = launch_speed.direction
                 # On convertit la distance du lancement en une vitesse de lancement en m/s avec l'échelle suivante : 7500 m = 1 m/s
                 earth.speed.magnitude = launch_speed.magnitude * scale / 7500
@@ -426,6 +445,7 @@ def tick(keys: dict, mouse: dict) -> None:
     if earth.exploding:
         if not lost.displayed and earth.explosion_end:
             lost.displayed = True
+            lost_sound.play()
     else:
         earth.move(1/40, time_scale)
         earth.collide()
@@ -436,6 +456,7 @@ def tick(keys: dict, mouse: dict) -> None:
             else:
                 level_end.displayed = True
         else:
+            lost_sound.play()
             lost.displayed = True
 
     # Mis à jour de la position de la souris
@@ -524,6 +545,7 @@ def events() -> list:
 
 
 def quit() -> None:
+    music.stop()
     if edited:
         saveLevelInMemory()
         saveLevelsToDisk()

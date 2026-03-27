@@ -246,6 +246,9 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
     # On charge les polices
     font = assets["fonts"]["inter.ttf"]
 
+    music = assets["sounds"]["music.mp3"]
+    music.play(-1)
+
     def onClickPlay() -> None:
         play.game = game_idx
     
@@ -266,6 +269,7 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
             if event.type == pygame.KEYDOWN:  # Une touche a été pressée
                 # Si c'est la touche 'espace' ou 'entrer' alors on retourne le jeu affiché à l'écran
                 if event.key in (pygame.K_SPACE, pygame.K_RETURN):
+                    music.stop()
                     return games[game_idx]
                 if event.key == pygame.K_LEFT:  # Flèche gauche
                     game_idx = (game_idx - 1) % len(games)
@@ -296,6 +300,7 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
 
         play.tick(*mouse_pos, click)
         if play.game != -1:
+            music.stop()
             return games[play.game]
         
         # On adapte la hauteur de la description
