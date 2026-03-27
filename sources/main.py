@@ -347,6 +347,8 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
 
         # On ajoute la description
         if description["game_index"] != game_idx or description["width"] != window.width:
+            if description["game_index"] != game_idx:
+                description["y"] = 40
             description["game_index"] = game_idx
             description["width"] = window.width
             description["surface"] = renderMultipleLines(font.getFont(window.height//30), window.width-80, game["config"]["description"]+"\n")
