@@ -10,7 +10,7 @@ if not hasattr(pygame.Surface, "width"):
     print("Désinstallez pygame et pygame-ce puis réinstallez pygame-ce\n")
     exit()
 
-from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar, Button
+from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar, Button, PopUp
 
 # Constantes
 
@@ -70,20 +70,38 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
     font = assets["fonts"]["inter.ttf"].getFont(18)
     fps_input = RangeInput(20, 30, 140, (5, SPEED), window, lambda value: f"FPS: {value}", font, 8, min(30, SPEED), **FPS_COLOR)
 
+    # On créé la pop-up qui s'affiche quand l'utilisateur met un mini-jeu en pause
+    def onClickResume() -> None:  # Callback du bouton 'reprendre'
+        pause.displayed = False
+        mouse["click"][0] = 0
+    
+    def onClickQuit() -> None:  # Callback du bouton 'quitter'
+        pause.displayed = False
+        pause.quit = True
+    
+    pause_background = assets["images"]["pause.png"]
+    pause_scale = RENDERING_HEIGHT * 0.8 / pause_background.height  # On calcule le facteur à utiliser pour redimensionner l'image
+    pause = PopUp(None, RENDERING_WIDTH//2, RENDERING_HEIGHT//2, pygame.transform.scale_by(pause_background, pause_scale),
+                  Button(round(-200*pause_scale), round(100*pause_scale), pygame.transform.scale_by(assets["images"]["resume.png"], pause_scale), onClickResume),
+                  Button(round(200*pause_scale), round(100*pause_scale), pygame.transform.scale_by(assets["images"]["quit.png"], pause_scale), onClickQuit))
+    pause.quit = False
+    shadow = pygame.Surface((RENDERING_WIDTH, RENDERING_HEIGHT), pygame.SRCALPHA)
+    shadow.fill((0, 0, 0, 100))
+
     wheel_changes = 0  # Stocke le mouvement de la roulette de la souris
 
     while True:
 
-        # On incrémente la durée de la pression des touches enfoncées
-
-        for key, value in keys_to_send.items():
-            if value > 0:
-                keys_to_send[key] += 1
+        if not pause.displayed:
+            # On incrémente la durée de la pression des touches enfoncées
+            for key, value in keys_to_send.items():
+                if value > 0:
+                    keys_to_send[key] += 1
 
         # Même chose pour les clics de la souris : gauche, roulette, droit
 
-        for i, clic in enumerate(mouse["click"]):
-            if clic > 0:
+        for i, click in enumerate(mouse["click"]):
+            if click > 0:
                 mouse["click"][i] += 1
 
         # Gestion des évènements de la fenêtre
@@ -132,34 +150,49 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
         mouse_y = min(RENDERING_HEIGHT-1, max(0, mouse_y))
         mouse["x"], mouse["y"] = mouse_x, mouse_y
 
-        # On simule les boutons
-        fps_input.tick(mouse_pos, mouse["click"][0])
-        fps = fps_input.value
-        
-        # On simule le mini-jeu
-        mouse_sent = {"x": mouse["x"], "y": mouse["y"], "click": mouse["click"].copy()}
-        if fps_input.clicked:  # Si le bouton est cliqué, on n'envoie pas le clic au mini-jeu
-            mouse_sent["click"][0] = 0
+        if pause.displayed:
 
-        options = {}
-        if FPS:
-            options["fps"] = clock.get_fps()
-        if WHEEL_MOTION:
-            options["wheel"] = wheel_changes
-        wheel_changes = 0
-
-        tick(keys=keys_to_send, mouse=mouse_sent, **options)
-
-        for event in events():
-            if event["type"] == "quit":  # Le mini-jeu est fini
+            pause.tick(mouse_x, mouse_y, mouse["click"][0])
+            if pause.quit:
                 quit()
                 return False
+
+        else:
+            # On simule les boutons
+            fps_input.tick(mouse_pos, mouse["click"][0])
+            fps = fps_input.value
+            
+            # On simule le mini-jeu
+            mouse_sent = {"x": mouse["x"], "y": mouse["y"], "click": mouse["click"].copy()}
+            if fps_input.clicked:  # Si le bouton est cliqué, on n'envoie pas le clic au mini-jeu
+                mouse_sent["click"][0] = 0
+
+            options = {}
+            if FPS:
+                options["fps"] = clock.get_fps()
+            if WHEEL_MOTION:
+                options["wheel"] = wheel_changes
+            wheel_changes = 0
+
+            tick(keys=keys_to_send, mouse=mouse_sent, **options)
+
+            for event in events():
+                if event["type"] == "pause":
+                    pause.displayed = True
+                elif event["type"] == "quit":  # Le mini-jeu est fini
+                    quit()
+                    return False
 
         cooldown_before_render += fps / SPEED
         if cooldown_before_render >= 1:
             cooldown_before_render -= 1
+
             game_rendering = display()  # On récupère le rendu du mini-jeu
-            if game_rendering.get_size() != (RENDERING_WIDTH, RENDERING_HEIGHT):
+            if pause.displayed:
+                game_rendering.blit(shadow, (0, 0))  # On assombrit tout ce qui est derrière la pop-up
+                pause.display(game_rendering)
+
+            if game_rendering.size != (RENDERING_WIDTH, RENDERING_HEIGHT):
                 print(f"[Erreur] La taille du rendu graphique du mini-jeu '{CONFIG["name"]}' ne correspond pas à sa configuration")
                 quit()
                 return False
@@ -178,7 +211,6 @@ def playGame(game: dict, window: pygame.Surface, assets: dict) -> bool:
             pygame.display.flip()  # On actualise la fenêtre
             
         clock.tick(SPEED)  # On limite la boucle à SPEED tours par seconde
-        
 
 
 def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygame.Surface = None) -> dict | None:

@@ -73,10 +73,10 @@ def tick(keys: dict, mouse: dict, wheel: int) -> None:
     if info.displayed:
         info.tick(mouse["x"], mouse["y"], mouse["click"][0])
 
-    # Option pour quitter
+    # Option pour mettre en pause
 
     if keys[pygame.K_ESCAPE]:
-        event_list.append({"type": "quit"})
+        event_list.append({"type": "pause"})
 
 
 def display() -> pygame.Surface:

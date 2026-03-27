@@ -437,13 +437,13 @@ class Button:
 
 class PopUp:
 
-    def __init__(self, window: pygame.Surface, x: int, y: int, background: pygame.Surface, *buttons: Button):
+    def __init__(self, window: pygame.Surface | None, x: int, y: int, background: pygame.Surface, *buttons: Button):
         """
         La class PopUp permet de créer facilement de petites fenêtres avec des boutons. 
         Après l'initialisation, il suffit d'appeler régulièrement 'tick' pour que les 
         boutons soient réactifs et 'display' pour afficher la pop-up.
 
-        :param window: La surface sur laquelle sera dessinée la pop-up
+        :param window: La surface sur laquelle sera dessinée la pop-up, si elle vaut None la surface passée en paramètre de 'display' sera utilisée
         :type window: pygame.Surface
         :param x: Abscisse du centre de la pop-up
         :type x: int
@@ -487,11 +487,16 @@ class PopUp:
         
         return intercepted
     
-    def display(self) -> None:
+    def display(self, window: pygame.Surface | None) -> None:
         """
         La fonction display affiche la pop-up sur la surface window aux 
         coordonnées x et y correspondants au centre de la pop-up.
+
+        :param window: Surface sur laquelle est affichée le bouton, si elle vaut None la surface donnée à l'initialisation est utilisée
+        :type window: pygame.Surface | None
         """
-        self.window.blit(self.background, (self.x - self.background.width//2, self.y - self.background.height//2))
+        if window == None:
+            window = self.window
+        window.blit(self.background, (self.x - self.background.width//2, self.y - self.background.height//2))
         for button in self.buttons:
-            button.display(self.window)
+            button.display(window)
