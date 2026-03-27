@@ -1,6 +1,6 @@
 {
     "name": "Space Golf",
-    "description":  "Space Golf est un mini-jeu basé sur la physique des astres. Le principe est de jouer au golf... dans l'espace et avec la Terre à la place de la balle ! Le but du jeu est d'envoyer la Terre dans un trou de ver en jouant avec la force d'attraction des étoiles et en évitant les terribles trous noirs. Afin d'obtenir une simulation réaliste nous avons utilisé la 2e loi de Newton et le calcul de la forrce gravitationnelle.",
+    "description":  "Space Golf est un mini-jeu basé sur la physique des astres. Le principe est de jouer au golf... dans l'espace et avec la Terre à la place de la balle !\n\nLe but du jeu est d'envoyer la Terre dans un trou de ver en jouant avec la force d'attraction des étoiles et en évitant les terribles trous noirs.\n\nAfin d'obtenir une simulation réaliste nous avons utilisé la 2e loi de Newton et le calcul de la forrce gravitationnelle.",
     "simulation_speed": 40,
     "keys": ["K_ESCAPE"],
     "width": 1600,

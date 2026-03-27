@@ -29,7 +29,7 @@ def loadGame(folder: str, folder_path: str) -> dict | None:
     game = {"loaded": False}
     
     # On ouvre le fichier config.json du mini-jeu pour récupérer son contenu
-    with open(path.join(folder_path, "games", folder, "config.json"), "r") as f:
+    with open(path.join(folder_path, "games", folder, "config.json"), "r", encoding="utf-8") as f:
         game["config"] = load(f)
     
     # On vérifie que toutes les clés nécessaires existes
@@ -62,6 +62,7 @@ def loadGame(folder: str, folder_path: str) -> dict | None:
             game["quit"] = module.quit
     except AttributeError:
         return None
+
     return game
 
 
@@ -164,6 +165,46 @@ def loadAssetsFolder(assets: dict, folder_path: str) -> None:
                         assets[element.name] = load(f)
                 except:
                     print(f"[Erreur] Impossible de charger le fichier JSON '{element.path}'")
+
+
+def renderMultipleLines(font: pygame.Font, max_width: int, text: str, color: tuple = (255, 255, 255)) -> pygame.Surface:
+    """
+    Affiche du texte sur plusieurs lignes en utilisant une police pygame, 
+    en revenant à la ligne pour ne pas dépasser la largeur maximale.
+
+    :param font: La police utilisé pour afficher le texte
+    :type font: pygame.Font
+    :param max_width: La largeur maximale en pixels pour chaque ligne
+    :type max_width: int
+    :param text: Le texte à afficher
+    :type text: str
+    :param color: La couleur RGB du texte
+    :return: Une surface contenant le texte affiché sur plusieurs lignes
+    :rtype: pygame.Surface
+    """
+    # Etape 1 : découpage du texte en lignes
+    space_width = font.size(" ")[0]
+    line_height = font.get_height()
+    words = [line.split(" ") for line in text.split("\n")]
+    lines = []
+    for line in words:
+        lines.append([])
+        x = 0
+        for word in line:
+            width = font.size(word)[0]
+            if x + width >= max_width:
+                lines.append([word])
+                x = width
+            else:
+                lines[-1].append(word)
+                x += width + space_width
+    
+    # Etape 2 : rendu graphique
+    surface = pygame.Surface((max_width, len(lines)*line_height), pygame.SRCALPHA)
+    for y, line in enumerate(lines):
+        surface.blit(font.render(" ".join(line), True, color), (0, y*line_height))
+    
+    return surface
 
 
 # Définition des class

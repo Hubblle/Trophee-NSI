@@ -15,7 +15,7 @@ if not (version_info[0] == 3 and version_info[1] >= 12 or version_info[0] > 3):
     print("\n[Erreur] Vous utilisez une version de python précédant la 3.12")
     print("Installez une version de python >= 3.12 pour lancer ce projet")
 
-from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar, Button, PopUp
+from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar, Button, PopUp, renderMultipleLines
 
 # Constantes
 
@@ -251,6 +251,8 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
     
     play = Button(lambda: window.width//2, lambda: window.height//2, assets["images"]["play.png"], onClickPlay, window)
     play.game = -1
+
+    description = {"game_index": None, "width": None, "surface": None, "y": 40, "shadow": None}
         
     while True:
         
@@ -296,6 +298,12 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
         if play.game != -1:
             return games[play.game]
         
+        # On adapte la hauteur de la description
+        if window.height - description["y"] <= mouse_pos[1]:
+            description["y"] += round((description["surface"].height - description["y"]) / 5)
+        else:
+            description["y"] += round((40 - description["y"]) / 5)
+        
         # On calcule la position des flèches et on vérifie les collisions avec la souris
         arrow_y = window.height//2-arrow_size[1]//2
         arrow_left_x = 10
@@ -336,6 +344,20 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
         # On ajoute le texte
         title = font.getFont(window.height//8).render(game["config"]["name"], True, (255, 255, 255))
         window.blit(title, (window.width//2-title.width//2, min(140, window.height//6)-title.height//2))
+
+        # On ajoute la description
+        if description["game_index"] != game_idx or description["width"] != window.width:
+            description["game_index"] = game_idx
+            description["width"] = window.width
+            description["surface"] = renderMultipleLines(font.getFont(window.height//30), window.width-80, game["config"]["description"]+"\n")
+            shadow_size = (window.width-40, description["surface"].height+40)
+            description["shadow"] = pygame.Surface(shadow_size, pygame.SRCALPHA)
+            pygame.draw.rect(description["shadow"], (0, 0, 128), (0, 0, *shadow_size), border_radius=20)
+        desc_surface = description["surface"]
+        shadow = description["shadow"]
+        shadow.set_alpha(min(round(description["y"]/desc_surface.height*120)+60, 255))
+        window.blit(shadow, (window.width//2-shadow.width//2, window.height-description["y"]-20))
+        window.blit(desc_surface, (window.width//2-desc_surface.width//2, window.height-description["y"]))
 
         # Si il y a une surface fantôme on l'affiche par dessus tout le reste
         if ghost_surface:
