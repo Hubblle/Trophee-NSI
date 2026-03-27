@@ -283,8 +283,8 @@ def load() -> None:
 
     # Une fois les assets chargées on peut créer les RangeInput
     fonts = assets["fonts"]["inter.ttf"]
-    zoom_input = RangeInput(36, WINDOW_HEIGHT-36, 160, (50000, 500000, 10000), surface, convertDistance, fonts.getFont(24), 12, 100000)
-    time_input = RangeInput(230, WINDOW_HEIGHT-36, 160, (600, 14400, 600), surface, convertTime, fonts.getFont(24), 12, 5400)
+    zoom_input = RangeInput(36, WINDOW_HEIGHT-36, 160, (50000, 500000, 10000), surface, convertDistance, fonts.getFont(24), 12, 200000)
+    time_input = RangeInput(230, WINDOW_HEIGHT-36, 160, (600, 14400, 600), surface, convertTime, fonts.getFont(24), 12, 4800)
     mode_button = RangeInput(WINDOW_WIDTH-120, 36, 60, (0, 1), surface, lambda value: f"Mode : {"édition" if value else "jeu"}", fonts.getFont(18), 9, 0)
     mass_input = RangeInput(WINDOW_WIDTH-150, 100, 100, (24, 28, 0.1), surface, lambda value: f"Masse : {10**(value if type_input.value < 3 else value+8):.2g} kg", fonts.getFont(20), 10, 25)
     radius_input = RangeInput(WINDOW_WIDTH-150, 170, 100, (7.3, 8.3, 0.05), surface, lambda value: f"Rayon : {10**value:.2g} m", fonts.getFont(20), 10, 7.7)
@@ -318,12 +318,12 @@ def init() -> None:
     lost.displayed = False
     event_list.clear()
     level_end.displayed = False
-    zoom_input.value = 100000
-    time_input.value = 5400
+    zoom_input.value = 200000
+    time_input.value = 4800
     music.play(-1)
 
 
-def tick(keys: dict, mouse: dict) -> None:
+def tick(keys: dict, mouse: dict, wheel: int) -> None:
     """
     Docstring for tick
     
@@ -331,6 +331,8 @@ def tick(keys: dict, mouse: dict) -> None:
     :type keys: dict
     :param mouse: Dictionnaire contenant les informations liées à la souris `{'x': int, 'y'; int, 'click': list[int, int, int]}`
     :type mouse: dict
+    :param wheel: Mouvement de la roulette de la souris depuis le dernier tick
+    :type wheel: int
     """
     global mouse_pos, cam_x, cam_y, launching, scale, time_scale, trials, editing, edited, max_trials, edit_target, trials
 
@@ -343,6 +345,10 @@ def tick(keys: dict, mouse: dict) -> None:
     if lost.displayed:
         lost.tick(mouse["x"], mouse["y"], mouse_click)
         mouse_click = 0
+    
+    # On permet à l'utilisateur de changer le zoom avec la molette de la souris
+    if wheel != 0:
+        zoom_input.value = min(max(scale+wheel*-2*zoom_input.step, zoom_input.minimum), zoom_input.maximum)
     
     # Simulation des boutons
     param = (mouse["x"], mouse["y"]), mouse_click
@@ -413,8 +419,8 @@ def tick(keys: dict, mouse: dict) -> None:
                 launching = False
                 launch_sound.play()
                 earth.speed.direction = launch_speed.direction
-                # On convertit la distance du lancement en une vitesse de lancement en m/s avec l'échelle suivante : 7500 m = 1 m/s
-                earth.speed.magnitude = launch_speed.magnitude * scale / 7500
+                # On convertit la distance du lancement en une vitesse de lancement en m/s avec l'échelle suivante : 6000 m = 1 m/s
+                earth.speed.magnitude = launch_speed.magnitude * scale / 6000
                 earth.locked = False
                 if not editing:
                     trials -= 1
