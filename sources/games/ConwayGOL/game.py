@@ -15,6 +15,7 @@ event_list = []  # Liste des évènements
 surface = pygame.Surface(WINDOW_SIZE)  # La surface utilisée dans la fonction display
 info: PopUp = None
 info_button: Button = None
+music: pygame.Sound = None
 
 # On définit les 5 fonctions principales
 
@@ -28,10 +29,12 @@ def load() -> None:
     def openInfo() -> None:
         info.displayed = True
     
-    global info, info_button
+    global info, info_button, music
     
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
+
+    music = assets["sounds"]["music.mp3"]
 
     info = PopUp(surface, WINDOW_WIDTH//2, WINDOW_HEIGHT//2, assets["images"]["info.png"],
                  Button(380, -280, assets["images"]["close.png"], onClickClose))
@@ -48,6 +51,7 @@ def init() -> None:
     """
     event_list.clear()
     info.displayed = False
+    music.play(-1)
     reset()
 
 
@@ -106,4 +110,8 @@ def events() -> list:
     events_copy = event_list.copy()
     event_list.clear()  # On vide la liste des évènements pour ne pas les renvoyer à nouveau au prochain appel
     return events_copy
+
+
+def quit() -> None:
+    music.stop()
     

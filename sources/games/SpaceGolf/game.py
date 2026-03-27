@@ -55,6 +55,7 @@ music: pygame.Sound = None
 click_sound: pygame.Sound = None
 lost_sound: pygame.Sound = None
 launch_sound: pygame.Sound = None
+explosion_sound: pygame.Sound = None
 
 # On définit les fonctions secondaires
 
@@ -243,7 +244,7 @@ def load() -> None:
     
     global background, zoom_input, time_input, earth, worm_hole, level_end, levels, fonts, restart_button, previous_button, \
         next_button, mode_button, add_button, mass_input, radius_input, type_input, lost, trials_input, remove_button, \
-        lost_sound, click_sound, launch_sound, music
+        lost_sound, click_sound, launch_sound, music, explosion_sound
     
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
@@ -302,6 +303,7 @@ def load() -> None:
     click_sound = assets["sounds"]["click.mp3"]
     music = assets["sounds"]["music.mp3"]
     launch_sound = assets["sounds"]["launch.mp3"]
+    explosion_sound = assets["sounds"]["explosion.mp3"]
 
 
 def init() -> None:
@@ -450,7 +452,8 @@ def tick(keys: dict, mouse: dict) -> None:
             lost_sound.play()
     else:
         earth.move(1/40, time_scale)
-        earth.collide()
+        if earth.collide():
+            explosion_sound.play()
     if earth.fallen:  # Tombée dans un trou noir
         if earth.success:
             if editing:

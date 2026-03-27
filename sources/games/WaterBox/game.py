@@ -5,6 +5,7 @@ from os import path
 from .sph_water import SPHSimulation, SPHParticle
 from utils import loadAssetsFolder, RangeInput
 import math
+from time import time
 
 WINDOW_WIDTH, WINDOW_HEIGHT = WINDOW_SIZE = (1600, 900)
 FOLDER_PATH = path.dirname(__file__)  # Chemin absolu du dossier contenant ce script
@@ -15,6 +16,8 @@ cam_y = 0
 event_list = []  # Liste des évènements
 l_fps = -1 #fps du dernier tick
 count = 0
+test = 2
+sound_cooldown = 0
 
 #surface principale
 surface = pygame.Surface(WINDOW_SIZE)
@@ -28,6 +31,7 @@ blur : RangeInput = None
 # On initie les variables qui vont contenir les assets
 background: pygame.Surface = None
 container: pygame.Surface = None
+spawn_sound: pygame.Sound = None
 
 # SPH Water Simulation
 sph_sim: SPHSimulation = None
@@ -38,16 +42,14 @@ def load() -> None:
     """
     load charge les assets.
     """
-    global background, container
+    global background, container, spawn_sound
 
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
 
     background = assets["images"]["background.png"]
     container = assets["images"]["Container.png"]
-
-
-    
+    spawn_sound = assets["sounds"]["spawn.mp3"]
 
 
 def init() -> None:
@@ -55,7 +57,7 @@ def init() -> None:
     Initialise/réinitialise le mini-jeu
     """
     
-    global sph_sim, flow_x, step, count, viscosity, stiffness,blur
+    global sph_sim, flow_x, step, count, viscosity, stiffness,blur, sound_cooldown
     
     event_list.clear()
     # Initialise la simulation avec 20 particules en jet d'eau
@@ -64,6 +66,8 @@ def init() -> None:
     viscosity = RangeInput(1400, 30, 50, (0.01,0.9,0.01), surface, lambda value:f"Viscosité: {round(value,3)}", pygame.font.Font(), 4, sph_sim.viscosity)
     stiffness = RangeInput(1400, 60, 50, (1,200,1), surface, lambda value:f"Facteur de pression: {value}", pygame.font.Font(), 4, sph_sim.gas_stiffness)
     blur = RangeInput(1400, 90, 50, (1,25,1), surface, lambda value:f"Flou: {value}", pygame.font.Font(), 4, 15)
+
+    sound_cooldown = 0
 
 i = 0
 
@@ -76,7 +80,7 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
     :param mouse: Dictionnaire contenant les informations liées à la souris `{'x': int, 'y'; int, 'click': list[int, int, int]}`
     :type mouse: dict
     """
-    global mouse_pos, cam_x, cam_y, sph_sim, l_fps, i, flow_x, world_x, world_y; viscosity, stiffness,blur
+    global mouse_pos, cam_x, cam_y, sph_sim, l_fps, i, world_x, world_y, viscosity, stiffness,blur, sound_cooldown
     
     mouse_pos_interact = (-1000,-1000)
 
@@ -96,7 +100,7 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
     world_y = mouse["y"] + cam_y
     
     # Si le clic gauche de la souris est pressé, on compare sa position à la précédente pour faire déplacer la caméra
-    if mouse["click"][0] > 0 and not (viscosity.clicked or stiffness.clicked):
+    if mouse["click"][0] > 0 and not (viscosity.clicked or stiffness.clicked or blur.clicked):
         cam_x += mouse_pos["x"] - mouse["x"]
         #cam_y += mouse_pos["y"] - mouse["y"]
         world_x = mouse["x"] + cam_x
@@ -106,6 +110,10 @@ def tick(keys: dict, mouse: dict, fps:float) -> None:
         if len(sph_sim.particles) < 300:
             if sph_sim and (0 < world_x < sph_sim.width and 0 < world_y < sph_sim.height):
                 sph_sim.add_particle(world_x, world_y)
+                t = time()
+                if t - sound_cooldown > 0.1:
+                    spawn_sound.play()
+                    sound_cooldown = t
             
     if mouse["click"][2] > 0:
         mouse_pos_interact = (world_x, world_y-50)

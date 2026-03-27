@@ -13,5 +13,6 @@
         "background_color": [180, 180, 180],
         "color": [210, 210, 210],
         "title_color": [100, 100, 100]
-    }
+    },
+    "quit_function": true
 }
