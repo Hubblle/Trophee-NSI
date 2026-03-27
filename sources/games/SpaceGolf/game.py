@@ -237,6 +237,8 @@ def load() -> None:
         click_sound.play()
         if edit_target in celestial_bodies:
             celestial_bodies.remove(edit_target)
+        if edit_target in earth.other_bodies:
+            earth.other_bodies.remove(edit_target)
         edit_target = None
     
     global background, zoom_input, time_input, earth, worm_hole, level_end, levels, fonts, restart_button, previous_button, \
