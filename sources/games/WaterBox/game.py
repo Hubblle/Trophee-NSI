@@ -32,6 +32,7 @@ blur : RangeInput = None
 background: pygame.Surface = None
 container: pygame.Surface = None
 spawn_sound: pygame.Sound = None
+music: pygame.Sound = None
 
 # SPH Water Simulation
 sph_sim: SPHSimulation = None
@@ -42,7 +43,7 @@ def load() -> None:
     """
     load charge les assets.
     """
-    global background, container, spawn_sound
+    global background, container, spawn_sound, music
 
     assets = {}
     loadAssetsFolder(assets, path.join(FOLDER_PATH, "assets"))  # On utilise la fonction utilitaire loadAssetsFolder définie dans sources/utils.py
@@ -50,6 +51,7 @@ def load() -> None:
     background = assets["images"]["background.png"]
     container = assets["images"]["Container.png"]
     spawn_sound = assets["sounds"]["spawn.mp3"]
+    music = assets["sounds"]["music.mp3"]
 
 
 def init() -> None:
@@ -68,6 +70,7 @@ def init() -> None:
     blur = RangeInput(1400, 90, 50, (1,25,1), surface, lambda value:f"Flou: {value}", pygame.font.Font(), 4, 15)
 
     sound_cooldown = 0
+    music.play(-1)
 
 i = 0
 
@@ -178,15 +181,15 @@ def display() -> pygame.Surface:
         # Afficher les informations
         font = pygame.font.Font(None, 24)
         text = font.render(f"Particules: {sph_sim.get_particle_count()} (max 300)", True, (0, 0, 0))
-        surface.blit(text, (10, 20))
+        surface.blit(text, (10, 60))
         help_text = font.render("Cliquer et bouger pour se déplacer, clique molette ajoute des particules", True, (0, 0, 0))
-        surface.blit(help_text, (10, 40))
-        surface.blit(font.render("Clique droit vous permet d'interagir avec les particules", True, (0,0,0)), (10,60))
+        surface.blit(help_text, (10, 80))
+        surface.blit(font.render("Clique droit vous permet d'interagir avec les particules", True, (0,0,0)), (10,100))
         
         global l_fps
         
         #afficher les fps
-        surface.blit(font.render(f"FPS: {l_fps}", True, (0,0,0)), (10,80))
+        surface.blit(font.render(f"Ticks/s: {l_fps:.1f}", True, (0,0,0)), (10,120))
 
     return surface
 
@@ -201,4 +204,7 @@ def events() -> list:
     events_copy = event_list.copy()
     event_list.clear()  # On vide la liste des évènements pour ne pas les renvoyer à nouveau au prochain appel
     return events_copy
+
+def quit() -> None:
+    music.stop()
     

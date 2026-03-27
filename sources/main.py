@@ -304,10 +304,11 @@ def menu(games: list, window: pygame.Surface, assets: dict, ghost_surface: pygam
             return games[play.game]
         
         # On adapte la hauteur de la description
-        if window.height - description["y"] <= mouse_pos[1]:
-            description["y"] += round((description["surface"].height - description["y"]) / 5)
-        else:
-            description["y"] += round((40 - description["y"]) / 5)
+        if description["surface"]:
+            if window.height - description["y"] <= mouse_pos[1]:
+                description["y"] += round((description["surface"].height - description["y"]) / 5)
+            else:
+                description["y"] += round((40 - description["y"]) / 5)
         
         # On calcule la position des flèches et on vérifie les collisions avec la souris
         arrow_y = window.height//2-arrow_size[1]//2
