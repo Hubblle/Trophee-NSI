@@ -528,7 +528,7 @@ class PopUp:
         
         return intercepted
     
-    def display(self, window: pygame.Surface | None) -> None:
+    def display(self, window: pygame.Surface | None = None) -> None:
         """
         La fonction display affiche la pop-up sur la surface window aux 
         coordonnées x et y correspondants au centre de la pop-up.
