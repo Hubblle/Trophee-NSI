@@ -2,13 +2,18 @@
 
 import pygame
 from os import scandir, path
-from sys import exit
+from sys import exit, version_info
 
 # pygame et pygame-ce utilisent le même nom de module et de dossier, cette sécurité permet d'éviter des erreurs inexpliquées plus tard
 if not hasattr(pygame.Surface, "width"):
     print("\n[Erreur] Vous utilisez la version régulière de pygame au lieu de pygame-ce")
     print("Désinstallez pygame et pygame-ce puis réinstallez pygame-ce\n")
     exit()
+
+# Ce projet fonctionne mal avec les versions de python précédant la 3.12
+if not (version_info[0] == 3 and version_info[1] >= 12 or version_info[0] > 3):
+    print("\n[Erreur] Vous utilisez une version de python précédant la 3.12")
+    print("Installez une version de python >= 3.12 pour lancer ce projet")
 
 from utils import loadAssetsFolder, loadGame, RangeInput, loadingBar, Button, PopUp
 
