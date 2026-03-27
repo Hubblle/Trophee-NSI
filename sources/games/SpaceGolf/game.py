@@ -461,8 +461,9 @@ def tick(keys: dict, mouse: dict) -> None:
             else:
                 level_end.displayed = True
         else:
-            lost_sound.play()
-            lost.displayed = True
+            if not lost.displayed:
+                lost_sound.play()
+                lost.displayed = True
 
     # Mis à jour de la position de la souris
 
